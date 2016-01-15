@@ -101,7 +101,7 @@ function setVisibilityAllArtLayers(obj, isVisible) {
 
 // export the given layer set; assumes that all layerSets and artLayers are invisible;
 // also assumes that the document that the layerSet belongs to is the active document
-function exportLayerSet(layerSet, scale, destination) {
+function exportLayerSet(layerSet, scale, destination, sourceArtScale) {
     setVisibilityAllArtLayers(app.activeDocument, false);
     setVisibilityAllArtLayers(layerSet, true);
     
@@ -126,7 +126,13 @@ function exportLayerSet(layerSet, scale, destination) {
     // check that the document dimensions are divisible by the target scale (ie @2x, @3x, etc.) 
     // this is so that units can be set in 1x in the target app with no extra or missing pixels
     if (app.activeDocument.width % scale != 0 || app.activeDocument.height % scale != 0) {
-        alert("Consider resizing '" + layerSet.name + "' so that the height and width are divisible by " + scale + " for the @" + scale + "x version");
+        if (scale != sourceArtScale) {
+            alert("Consider resizing '" + layerSet.name + "' so that you get a whole number when multiplying x and y dimensions by " + scale + "/" + sourceArtScale + 
+            " for the @" + scale + "x version");
+        }
+        else {
+            alert("Consider resizing '" + layerSet.name + "' to be divisible by " + scale + " for the @" + scale + "x version");
+        }
     }
 
     var fileName = layerSet.name.replace(/[:\/\\*\?\"\<\>\|]/g, "_");  // replace special chars with an underscore
@@ -184,7 +190,7 @@ function exportLayerSets(exportOptions) {
                 continue;
             }
               
-            exportLayerSet(app.activeDocument.layerSets[i], currScale, exportOptions.destination);
+            exportLayerSet(app.activeDocument.layerSets[i], currScale, exportOptions.destination, sourceArtScale);
         }
         app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
         app.activeDocument = originalDoc;
