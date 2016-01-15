@@ -268,7 +268,11 @@ function main() {
     dialog.scale.add("item", "1x");
     dialog.scale.add("item", "2x");
     dialog.scale.add("item", "3x");
-    dialog.scale.selection = exportOptions.scale;
+    for (i = 0; i < dialog.scale.items.length; i++) {
+        if (dialog.scale.items[i].toString().indexOf(exportOptions.scale) != -1) {
+            dialog.scale.selection = i;
+        }
+    }
     
     dialog.onlyVisibleCheckbox = dialog.panelScale.add("checkbox", undefined, visibleOnly);
     dialog.onlyVisibleCheckbox.value = exportOptions.visibleOnly;
