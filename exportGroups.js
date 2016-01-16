@@ -101,7 +101,7 @@ function setVisibilityAllArtLayers(obj, isVisible) {
 
 // export the given layer set; assumes that all layerSets and artLayers are invisible;
 // also assumes that the document that the layerSet belongs to is the active document
-function exportLayerSet(layerSet, scale, destination, sourceArtScale) {
+function exportLayerSet(layerSet, currScale, destination, sourceArtScale) {
     setVisibilityAllArtLayers(app.activeDocument, false);
     setVisibilityAllArtLayers(layerSet, true);
     
@@ -123,30 +123,33 @@ function exportLayerSet(layerSet, scale, destination, sourceArtScale) {
         app.activeDocument.trim(TrimType.TRANSPARENT);
     } 
 
-    // check that the document dimensions are divisible by the target scale (ie @2x, @3x, etc.) 
-    // this is so that units can be set in 1x in the target app with no extra or missing pixels
-    if (app.activeDocument.width % scale != 0 || app.activeDocument.height % scale != 0) {
-        if (scale != sourceArtScale) {
-            alert("Consider resizing '" + layerSet.name + "' so that you get a whole number when multiplying x and y dimensions by " + scale + "/" + sourceArtScale + 
-            " for the @" + scale + "x version");
-        }
-        else {
-            alert("Consider resizing '" + layerSet.name + "' to be divisible by " + scale + " for the @" + scale + "x version");
+    // if we are exporting at the source art scale, check that x and y dimensions will resullt in whole numbers for all smaller scales
+    // check is here, instead of where we resize document because we need trimming to have already occurred (only care about layer set sizes, not document size)
+    if (currScale == sourceArtScale) {
+        for (testScale= sourceArtScale - 1; testScale > 0; testScale--) {
+            var layerSetWidth = app.activeDocument.width.value / sourceArtScale * testScale;
+            var layerSetHeight = app.activeDocument.height.value / sourceArtScale * testScale;
+            
+            if (layerSetWidth % 1 != 0 || layerSetHeight % 1 != 0) {
+                alert("Consider resizing '" + layerSet.name + "' so that you get a whole number when multiplying x and y dimensions by " + testScale + "/" + sourceArtScale + 
+                " for the @" + testScale + "x version");
+            }
         }
     }
+    
 
     var fileName = layerSet.name.replace(/[:\/\\*\?\"\<\>\|]/g, "_");  // replace special chars with an underscore
     if (fileName.length > 120) {
         fileName = fileName.substring(0, 120);
     }
     var fileNameParts = fileName.split(specificScaleForLayerSetSeparator);
-    if (scale > 1) {
-        fileName = fileNameParts[0] + specificScaleForLayerSetSeparator + scale + "x";
+    if (currScale > 1) {
+        fileName = fileNameParts[0] + specificScaleForLayerSetSeparator + currScale + "x";
     }
     else {
         fileName = fileNameParts[0];
     }
-    saveFile(fileName, scale, destination);
+    saveFile(fileName, currScale, destination);
 }
 
 // finds the layer set (if there is one) that is targeted to the given scale, with the given name
