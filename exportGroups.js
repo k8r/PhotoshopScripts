@@ -1,4 +1,5 @@
 ﻿
+var chooseValidFolder = "Please choose a valid folder to export to.";
 var openDocAlert = "You must have the document you wish to export open.";
 var title = "Export groups as PNGs";
 var scaleLabel = "Scale";
@@ -169,14 +170,15 @@ function exportLayerSets(exportOptions) {
     if (app.activeDocument.layerSets.length <= 0) {
         return;
     }
+    var originalDoc = app.activeDocument;
     var sourceArtScale = exportOptions.scale + 1; // export options' scale refers to the drop down index, which is off by one
     for (currScale = sourceArtScale; currScale > 0; currScale--) {
-        var originalDoc = app.activeDocument;
         
         var newWidth = app.activeDocument.width / sourceArtScale * currScale; // make each one 1x and then multipy by current scale factor
-        dupDocumentAtSize(newWidth); 
         
         for( var i = 0; i < app.activeDocument.layerSets.length; i++) {
+            dupDocumentAtSize(newWidth); 
+            
             // First check if we should skip exporting the current layer set
             if (exportOptions.visibleOnly) { 
                 if (!originalDoc.layerSets[i].visible) {
@@ -194,9 +196,10 @@ function exportLayerSets(exportOptions) {
             }
               
             exportLayerSet(app.activeDocument.layerSets[i], currScale, exportOptions.destination, sourceArtScale);
+            
+            app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
+            app.activeDocument = originalDoc;
         }
-        app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
-        app.activeDocument = originalDoc;
     }       
 }
 
@@ -321,7 +324,7 @@ function main() {
     dialog.exportButton.onClick = function() {
         
         if (dialog.destination.text.length <= 0) {
-            alert("Please choose a valid folder to export to.");                
+            alert(chooseValidFolder);                
             return;
         }
         
