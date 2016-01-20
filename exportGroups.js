@@ -131,9 +131,9 @@ function exportLayerSet(layerSet, currScale, destination, sourceArtScale) {
             var layerSetWidth = app.activeDocument.width.value / sourceArtScale * testScale;
             var layerSetHeight = app.activeDocument.height.value / sourceArtScale * testScale;
             
-            if (layerSetWidth % 1 != 0 || layerSetHeight % 1 != 0) {
-                alert("Consider resizing '" + layerSet.name + "' so that you get a whole number when multiplying x and y dimensions by " + testScale + "/" + sourceArtScale + 
-                " for the @" + testScale + "x version. Also, make sure that the x and y locations are whole numbers.");
+            if (layerSetWidth.toString().indexOf(".") != -1 || layerSetHeight.toString().indexOf(".") != -1) {
+                alert("Consider resizing '" + layerSet.name + "'. Multiplying by " + testScale + "/" + sourceArtScale + " for the " + testScale + "x version results in " + layerSetWidth
+                + "x" + layerSetHeight);
             }
         }
     }
