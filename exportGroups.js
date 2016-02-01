@@ -177,7 +177,6 @@ function exportLayerSets(exportOptions) {
         var newWidth = app.activeDocument.width / sourceArtScale * currScale; // make each one 1x and then multipy by current scale factor
         
         for( var i = 0; i < app.activeDocument.layerSets.length; i++) {
-            dupDocumentAtSize(newWidth); 
             
             // First check if we should skip exporting the current layer set
             if (exportOptions.visibleOnly) { 
@@ -194,6 +193,8 @@ function exportLayerSets(exportOptions) {
                 && layerSetForScale != app.activeDocument.layerSets[i].name) { 
                 continue;
             }
+        
+            dupDocumentAtSize(newWidth); 
               
             exportLayerSet(app.activeDocument.layerSets[i], currScale, exportOptions.destination, sourceArtScale);
             
