@@ -89,33 +89,33 @@ function saveFile(fileName, scale, destination) {
 
 }
 
-// make all art layers invisible
-function setVisibilityAllArtLayers(obj, isVisible) {
-    for( var i = 0; i < obj.artLayers.length; i++) {
-        obj.artLayers[i].allLocked = isVisible;
-        obj.artLayers[i].visible = isVisible;
-    }
-    for( var i = 0; i < obj.layerSets.length; i++) {
-        setVisibilityAllArtLayers(obj.layerSets[i], isVisible);
+function hideAllLayers() {
+    var doc = app.activeDocument;
+    for (var i = 0 ; i < doc.layers.length; i++){
+        doc.layers[i].visible = false;
     }
 }
 
 // export the given layer set; assumes that all layerSets and artLayers are invisible;
 // also assumes that the document that the layerSet belongs to is the active document
 function exportLayerSet(layerSet, currScale, destination, sourceArtScale) {
-    setVisibilityAllArtLayers(app.activeDocument, false);
-    setVisibilityAllArtLayers(layerSet, true);
+    hideAllLayers();
     
     // get bounds of layer, if size layer exists
     // make size layer invisible if it exists
+    // make other art layers visible
     var bounds = [];
+    layerSet.visible = true;
     for ( var j = 0; j < layerSet.artLayers.length; j++) {
+        layerSet.artLayers[j].visible = true;
         if (layerSet.artLayers[j].name.indexOf(artLayerLabelForSize) != -1) {
             bounds = layerSet.artLayers[j].bounds;
             layerSet.artLayers[j].visible = false;
         }
     }
 
+    history = app.activeDocument.historyStates.length - 1;
+    
     // crop doc to bounds from size art layer, or trim transparency if no size art layer
     if (bounds.length > 0) {
         app.activeDocument.crop(bounds);
@@ -151,6 +151,10 @@ function exportLayerSet(layerSet, currScale, destination, sourceArtScale) {
         fileName = fileNameParts[0];
     }
     saveFile(fileName, currScale, destination);
+    
+    // undo to make document the original size
+    app.activeDocument.activeHistoryState = app.activeDocument.historyStates[history];
+    app.purge(PurgeTarget.HISTORYCACHES);
 }
 
 // finds the layer set (if there is one) that is targeted to the given scale, with the given name
@@ -175,6 +179,7 @@ function exportLayerSets(exportOptions) {
     for (currScale = sourceArtScale; currScale > 0; currScale--) {
         
         var newWidth = app.activeDocument.width / sourceArtScale * currScale; // make each one 1x and then multipy by current scale factor
+        dupDocumentAtSize(newWidth); 
         
         for( var i = 0; i < app.activeDocument.layerSets.length; i++) {
             
@@ -193,14 +198,12 @@ function exportLayerSets(exportOptions) {
                 && layerSetForScale != app.activeDocument.layerSets[i].name) { 
                 continue;
             }
-        
-            dupDocumentAtSize(newWidth); 
               
             exportLayerSet(app.activeDocument.layerSets[i], currScale, exportOptions.destination, sourceArtScale);
-            
-            app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
-            app.activeDocument = originalDoc;
         }
+    
+        app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
+        app.activeDocument = originalDoc;
     }       
 }
 
