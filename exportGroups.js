@@ -108,18 +108,9 @@ function saveFile(fileName, scale, destination) {
 
 }
 
-function hideLayerSets() {
-    var doc = app.activeDocument;
-    for (var i = 0 ; i < doc.layerSets.length; i++){
-        doc.layerSets[i].visible = false;
-    }
-}
-
 // export the given layer set; assumes that all layerSets and artLayers are invisible;
 // also assumes that the document that the layerSet belongs to is the active document
 function exportLayerSet(layerSet, currScale, destination, sourceArtScale) {
-    hideLayerSets();
-    
     // get bounds of layer, if size layer exists
     // make size layer invisible if it exists
     // make other art layers visible
