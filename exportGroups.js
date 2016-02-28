@@ -44,8 +44,27 @@ function resizeActiveDocument(newWidth) {
 }
 
 // dups active document, resizes it to the given width, and makes the dupped doc the active doc
-function dupDocumentAtSize(newWidth) {
-    app.activeDocument = app.documents[app.activeDocument.name].duplicate();
+function dupActiveLayer(newWidth) {
+    
+    // from scripting listener - dups active layer into a new document
+    var idMk = charIDToTypeID( "Mk  " );
+    var desc39 = new ActionDescriptor();
+    var idnull = charIDToTypeID( "null" );
+    var ref13 = new ActionReference();
+    var idDcmn = charIDToTypeID( "Dcmn" );
+    ref13.putClass( idDcmn );
+    desc39.putReference( idnull, ref13 );
+    var idUsng = charIDToTypeID( "Usng" );
+    var ref14 = new ActionReference();
+    var idLyr = charIDToTypeID( "Lyr " );
+    var idOrdn = charIDToTypeID( "Ordn" );
+    var idTrgt = charIDToTypeID( "Trgt" );
+    ref14.putEnumerated( idLyr, idOrdn, idTrgt );
+    desc39.putReference( idUsng, ref14 );
+    var idVrsn = charIDToTypeID( "Vrsn" );
+    desc39.putInteger( idVrsn, 5 );
+    executeAction( idMk, desc39, DialogModes.NO );
+
     resizeActiveDocument(newWidth);
 }
 
@@ -89,17 +108,17 @@ function saveFile(fileName, scale, destination) {
 
 }
 
-function hideAllLayers() {
+function hideLayerSets() {
     var doc = app.activeDocument;
-    for (var i = 0 ; i < doc.layers.length; i++){
-        doc.layers[i].visible = false;
+    for (var i = 0 ; i < doc.layerSets.length; i++){
+        doc.layerSets[i].visible = false;
     }
 }
 
 // export the given layer set; assumes that all layerSets and artLayers are invisible;
 // also assumes that the document that the layerSet belongs to is the active document
 function exportLayerSet(layerSet, currScale, destination, sourceArtScale) {
-    hideAllLayers();
+    hideLayerSets();
     
     // get bounds of layer, if size layer exists
     // make size layer invisible if it exists
@@ -113,8 +132,6 @@ function exportLayerSet(layerSet, currScale, destination, sourceArtScale) {
             layerSet.artLayers[j].visible = false;
         }
     }
-
-    history = app.activeDocument.historyStates.length - 1;
     
     // crop doc to bounds from size art layer, or trim transparency if no size art layer
     if (bounds.length > 0) {
@@ -151,10 +168,6 @@ function exportLayerSet(layerSet, currScale, destination, sourceArtScale) {
         fileName = fileNameParts[0];
     }
     saveFile(fileName, currScale, destination);
-    
-    // undo to make document the original size
-    app.activeDocument.activeHistoryState = app.activeDocument.historyStates[history];
-    app.purge(PurgeTarget.HISTORYCACHES);
 }
 
 // finds the layer set (if there is one) that is targeted to the given scale, with the given name
@@ -171,6 +184,7 @@ function findLayerSetForScale(scale, layerSetName) {
 }
 
 function exportLayerSets(exportOptions) {
+
     if (app.activeDocument.layerSets.length <= 0) {
         return;
     }
@@ -179,7 +193,6 @@ function exportLayerSets(exportOptions) {
     for (currScale = sourceArtScale; currScale > 0; currScale--) {
         
         var newWidth = app.activeDocument.width / sourceArtScale * currScale; // make each one 1x and then multipy by current scale factor
-        dupDocumentAtSize(newWidth); 
         
         for( var i = 0; i < app.activeDocument.layerSets.length; i++) {
             
@@ -192,18 +205,22 @@ function exportLayerSets(exportOptions) {
             if (app.activeDocument.layerSets[i].name.indexOf(layerSetLabelForDoNotExport) != -1)
                 continue;
                 
+            // TODO - need to come up with a tactic for this that doesn't require looping through all layers!!
             // check if there exists a layer set with the current name specifically for the current scale, and make sure it is the current layer set
-            var layerSetForScale = findLayerSetForScale(currScale, app.activeDocument.layerSets[i].name);
-            if ((layerSetForScale != null || app.activeDocument.layerSets[i].name.indexOf(specificScaleForLayerSetSeparator) != -1) 
-                && layerSetForScale != app.activeDocument.layerSets[i].name) { 
-                continue;
-            }
+            //var layerSetForScale = findLayerSetForScale(currScale, app.activeDocument.layerSets[i].name);
+           // if ((layerSetForScale != null || app.activeDocument.layerSets[i].name.indexOf(specificScaleForLayerSetSeparator) != -1) 
+                //&& layerSetForScale != app.activeDocument.layerSets[i].name) { 
+               // continue;
+            //}
+        
+            app.activeDocument.activeLayer = app.activeDocument.layerSets[i];
+            dupActiveLayer(newWidth); 
               
-            exportLayerSet(app.activeDocument.layerSets[i], currScale, exportOptions.destination, sourceArtScale);
+            exportLayerSet(app.activeDocument.activeLayer, currScale, exportOptions.destination, sourceArtScale);
+            
+            app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
+            app.activeDocument = originalDoc;
         }
-    
-        app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
-        app.activeDocument = originalDoc;
     }       
 }
 
