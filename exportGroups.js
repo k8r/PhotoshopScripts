@@ -12,6 +12,7 @@ var scaleNote = "1) Images will be exported at the scale you choose, and at all 
 var ignoreGroupNote = "2) If you don't want a group to be exported, include 'DONOTEXPORT' in its name.";
 var emptySpaceNote = "3) The script will crop empty space around a group.";
 var consistentSizeNote = "4) Alternatively, if you want to specify a size for a group, include a shape layer labeled 'SIZE'.";
+var ipadSpecific = "5) If you add '~ipad' to the working art file name, that will be added to the resulting file names (to let you export tablet-specific graphics)";
 var titleSelectDestination = "Select Destination";
 var visibleOnly = "Export only visible groups";
 var appDescriptor = "exportGroupsAtDifferentSizes";
@@ -44,7 +45,7 @@ function resizeActiveDocument(newWidth) {
 }
 
 // dups active document, resizes it to the given width, and makes the dupped doc the active doc
-function dupActiveLayer(newWidth) {
+function dupActiveLayer(sourceArtScale, targetScale) {
     
     // from scripting listener - dups active layer into a new document
     var idMk = charIDToTypeID( "Mk  " );
@@ -64,6 +65,11 @@ function dupActiveLayer(newWidth) {
     var idVrsn = charIDToTypeID( "Vrsn" );
     desc39.putInteger( idVrsn, 5 );
     executeAction( idMk, desc39, DialogModes.NO );
+    
+    trimExtraSpace(app.activeDocument.activeLayer);
+    
+    //TODO - need to crop here
+    var newWidth = app.activeDocument.width / sourceArtScale * currScale; // make each one 1x and then multipy by current scale factor
 
     resizeActiveDocument(newWidth);
 }
@@ -108,9 +114,7 @@ function saveFile(fileName, scale, destination) {
 
 }
 
-// export the given layer set; assumes that all layerSets and artLayers are invisible;
-// also assumes that the document that the layerSet belongs to is the active document
-function exportLayerSet(layerSet, currScale, destination, sourceArtScale) {
+function trimExtraSpace(layerSet) {
     // get bounds of layer, if size layer exists
     // make size layer invisible if it exists
     // make other art layers visible
@@ -131,6 +135,11 @@ function exportLayerSet(layerSet, currScale, destination, sourceArtScale) {
     else {
         app.activeDocument.trim(TrimType.TRANSPARENT);
     } 
+}
+
+// export the given layer set; assumes that all layerSets and artLayers are invisible;
+// also assumes that the document that the layerSet belongs to is the active document
+function exportLayerSet(layerSet, currScale, destination, sourceArtScale, suffix) {
 
     // if we are exporting at the source art scale, check that x and y dimensions will resullt in whole numbers for all smaller scales
     // check is here, instead of where we resize document because we need trimming to have already occurred (only care about layer set sizes, not document size)
@@ -152,12 +161,14 @@ function exportLayerSet(layerSet, currScale, destination, sourceArtScale) {
         fileName = fileName.substring(0, 120);
     }
     var fileNameParts = fileName.split(specificScaleForLayerSetSeparator);
+    fileName = fileNameParts[0];
+    if (suffix != null) {
+        fileName += suffix;
+    }
     if (currScale > 1) {
-        fileName = fileNameParts[0] + specificScaleForLayerSetSeparator + currScale + "x";
+        fileName = fileName + specificScaleForLayerSetSeparator + currScale + "x";
     }
-    else {
-        fileName = fileNameParts[0];
-    }
+    
     saveFile(fileName, currScale, destination);
 }
 
@@ -176,14 +187,17 @@ function findLayerSetForScale(scale, layerSetName) {
 
 function exportLayerSets(exportOptions) {
 
+    var suffix = null;
+    if (app.activeDocument.name.indexOf("~ipad") != -1) {
+        suffix = "~ipad";
+    }
+
     if (app.activeDocument.layerSets.length <= 0) {
         return;
     }
     var originalDoc = app.activeDocument;
     var sourceArtScale = exportOptions.scale + 1; // export options' scale refers to the drop down index, which is off by one
     for (currScale = sourceArtScale; currScale > 0; currScale--) {
-        
-        var newWidth = app.activeDocument.width / sourceArtScale * currScale; // make each one 1x and then multipy by current scale factor
         
         for( var i = 0; i < app.activeDocument.layerSets.length; i++) {
             
@@ -205,9 +219,9 @@ function exportLayerSets(exportOptions) {
             //}
         
             app.activeDocument.activeLayer = app.activeDocument.layerSets[i];
-            dupActiveLayer(newWidth); 
+            dupActiveLayer(sourceArtScale, currScale); 
               
-            exportLayerSet(app.activeDocument.activeLayer, currScale, exportOptions.destination, sourceArtScale);
+            exportLayerSet(app.activeDocument.activeLayer, currScale, exportOptions.destination, sourceArtScale, suffix);
             
             app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
             app.activeDocument = originalDoc;
@@ -358,6 +372,7 @@ function main() {
     dialog.panelNotes.add("statictext", undefined, ignoreGroupNote);
     dialog.panelNotes.add("statictext", undefined, emptySpaceNote);
     dialog.panelNotes.add("statictext", undefined, consistentSizeNote);
+    dialog.panelNotes.add("statictext", undefined, ipadSpecific);
 
     var result = dialog.show();
 }
