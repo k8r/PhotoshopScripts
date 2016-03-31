@@ -162,11 +162,11 @@ function exportLayerSet(layerSet, currScale, destination, sourceArtScale, suffix
     }
     var fileNameParts = fileName.split(specificScaleForLayerSetSeparator);
     fileName = fileNameParts[0];
-    if (suffix != null) {
-        fileName += suffix;
-    }
     if (currScale > 1) {
         fileName = fileName + specificScaleForLayerSetSeparator + currScale + "x";
+    }
+    if (suffix != null) {
+        fileName += suffix;
     }
     
     saveFile(fileName, currScale, destination);
