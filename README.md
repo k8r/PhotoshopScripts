@@ -17,6 +17,6 @@ If you have some groups you never want to export, include the following text in 
 ![alt tag](https://raw.githubusercontent.com/k8r/PhotoshopScripts/master/Screenshots/exportGroupsShowSizeLayer.png)<br>
 Unless you specify a size for a group, the script will crop out any empty space around the group's artwork. To specify a size, include a shape layer named "SIZE", with a rectangle sized to the size you want. See image above.
 
-### Groups Created for Only One Scale
+### Groups Created for Only One Scale - NOT WORKING ATM
 ![alt tag](https://raw.githubusercontent.com/k8r/PhotoshopScripts/master/Screenshots/exportGroupsSpecificScale.png)<br>
 If you append a scale to the name of a group, that group will only be exported for the scale you indicated. Also, if another group is named the same sans the scale, that group will not be exported for the scale you indicated in the name of the former group. For example, if you have two groups, one named "settings" and the other named "settings@1x", settings@1x will be exported for 1x, and settings will be exported for 2x and 3x (if you indicated the source art scale is 3x). One use case is for when you want a less detailed image for smaller screen sizes. "@" is used to separate the scale from the name, so don't use that character in group names for other reasons.
