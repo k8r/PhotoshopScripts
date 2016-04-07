@@ -45,7 +45,7 @@ function resizeActiveDocument(newWidth) {
 }
 
 // dups active document, resizes it to the given width, and makes the dupped doc the active doc
-function dupActiveLayer(sourceArtScale, targetScale) {
+function dupActiveLayer(sourceArtScale, targetScale, layerSetName) {
     
     // from scripting listener - dups active layer into a new document
     var idMk = charIDToTypeID( "Mk  " );
@@ -69,8 +69,16 @@ function dupActiveLayer(sourceArtScale, targetScale) {
     trimExtraSpace(app.activeDocument.activeLayer);
     
     //TODO - need to crop here
-    var newWidth = app.activeDocument.width / sourceArtScale * currScale; // make each one 1x and then multipy by current scale factor
-
+    var oneXWidth = app.activeDocument.width / sourceArtScale;
+    var oneXHeight = app.activeDocument.width / sourceArtScale;
+    var newWidth = oneXWidth * currScale; // make each one 1x and then multipy by current scale factor
+    
+    if (targetScale == sourceArtScale) { // only want one alert per layer
+        if (oneXWidth.toString().indexOf(".") != -1 || oneXHeight.toString().indexOf(".") != -1) {
+            alert("Consider resizing or repositioning '" + layerSetName + "'. Its size (in both dimensions) should be divisible by " + sourceArtScale + 
+            ", and its x and y positions should be whole numbers.");
+        }
+    }
     resizeActiveDocument(newWidth);
 }
 
@@ -141,21 +149,6 @@ function trimExtraSpace(layerSet) {
 // also assumes that the document that the layerSet belongs to is the active document
 function exportLayerSet(layerSet, currScale, destination, sourceArtScale, suffix) {
 
-    // if we are exporting at the source art scale, check that x and y dimensions will resullt in whole numbers for all smaller scales
-    // check is here, instead of where we resize document because we need trimming to have already occurred (only care about layer set sizes, not document size)
-    if (currScale == sourceArtScale) {
-        for (testScale= sourceArtScale - 1; testScale > 0; testScale--) {
-            var layerSetWidth = app.activeDocument.width.value / sourceArtScale * testScale;
-            var layerSetHeight = app.activeDocument.height.value / sourceArtScale * testScale;
-            
-            if (layerSetWidth.toString().indexOf(".") != -1 || layerSetHeight.toString().indexOf(".") != -1) {
-                alert("Consider resizing '" + layerSet.name + "'. Multiplying by " + testScale + "/" + sourceArtScale + " for the " + testScale + "x version results in " + layerSetWidth
-                + "x" + layerSetHeight);
-            }
-        }
-    }
-    
-
     var fileName = layerSet.name.replace(/[:\/\\*\?\"\<\>\|]/g, "_");  // replace special chars with an underscore
     if (fileName.length > 120) {
         fileName = fileName.substring(0, 120);
@@ -219,7 +212,7 @@ function exportLayerSets(exportOptions) {
             //}
         
             app.activeDocument.activeLayer = app.activeDocument.layerSets[i];
-            dupActiveLayer(sourceArtScale, currScale); 
+            dupActiveLayer(sourceArtScale, currScale, app.activeDocument.activeLayer.name); 
               
             exportLayerSet(app.activeDocument.activeLayer, currScale, exportOptions.destination, sourceArtScale, suffix);
             
