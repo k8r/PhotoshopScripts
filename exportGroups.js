@@ -1,4 +1,5 @@
-﻿
+﻿// Exports groups, each as a separate PNG
+
 var chooseValidFolder = "Please choose a valid folder to export to.";
 var openDocAlert = "You must have the document you wish to export open.";
 var title = "Export groups as PNGs";
