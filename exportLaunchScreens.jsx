@@ -19,36 +19,6 @@ var addToResources = "4) Be sure to add the resulting images to your Resources d
 var titleSelectDestination = "Select Destination";
 var appDescriptorName = "exportLaunchScreens";
 
-var artLayerLabelForSize = "SIZE";
-var layerSetLabelForDoNotExport = "DONOTEXPORT";
-var specificScaleForLayerSetSeparator = "@";
-
-// consts
-var MAX_SCALE = 3;
-
-function trimExtraSpace(layerSet) {
-    // get bounds of layer, if size layer exists
-    // make size layer invisible if it exists
-    // make other art layers visible
-    var bounds = [];
-    layerSet.visible = true;
-    for ( var j = 0; j < layerSet.artLayers.length; j++) {
-        layerSet.artLayers[j].visible = true;
-        if (layerSet.artLayers[j].name.indexOf(artLayerLabelForSize) != -1) {
-            bounds = layerSet.artLayers[j].bounds;
-            layerSet.artLayers[j].visible = false;
-        }
-    }
-    
-    // crop doc to bounds from size art layer, or trim transparency if no size art layer
-    if (bounds.length > 0) {
-        app.activeDocument.crop(bounds);
-      }
-    else {
-        app.activeDocument.trim(TrimType.TRANSPARENT);
-    } 
-}
-
 function exportLaunchScreens(destination) {
     var originalDoc = app.activeDocument;
     app.activeDocument.duplicate();
@@ -73,7 +43,7 @@ function exportLaunchScreens(destination) {
     saveFile("Default-Portrait.png", destination);
     
     // iPad Non-retina Landscape
-    changeCanvasSize(2048, 1536, upperLeftColor);
+    changeCanvasSize(1024, 768, upperLeftColor);
     saveFile("Default-Landscape.png", destination);
     
     // reset
@@ -97,52 +67,6 @@ function exportLaunchScreens(destination) {
     app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
     app.activeDocument = originalDoc;
     
-}
-
-// export the given layer set; assumes that all layerSets and artLayers are invisible;
-// also assumes that the document that the layerSet belongs to is the active document
-function exportLayerSet(layerSet, currScale, destination, sourceArtScale, suffix) {
-
-    var fileName = layerSet.name.replace(/[:\/\\*\?\"\<\>\|]/g, "_");  // replace special chars with an underscore
-    if (fileName.length > 120) {
-        fileName = fileName.substring(0, 120);
-    }
-    var fileNameParts = fileName.split(specificScaleForLayerSetSeparator);
-    fileName = fileNameParts[0];
-    if (currScale > 1) {
-        fileName = fileName + specificScaleForLayerSetSeparator + currScale + "x";
-    }
-    if (suffix != null) {
-        fileName += suffix;
-    }
-    
-    saveFile(fileName, currScale, destination);
-}
-
-// finds the layer set (if there is one) that is targeted to the given scale, with the given name
-// for instance, if you want to have your 1x image be different from 2x and 3x, you would name 
-// it nameOfImage@1x (an image corresponds to a layer set) 
-function findLayerSetForScale(scale, layerSetName) {
-    for( var i = 0; i < app.activeDocument.layerSets.length; i++) {
-        var parts = layerSetName.split(specificScaleForLayerSetSeparator);
-        if (app.activeDocument.layerSets[i].name.indexOf(parts[0] + specificScaleForLayerSetSeparator + scale) != -1) {
-            return app.activeDocument.layerSets[i].name;
-        }
-    }
-    return null;
-}
-
-function exportLayerSets(exportOptions) {
-
-    var suffix = null;
-    if (app.activeDocument.name.indexOf("~ipad") != -1) {
-        suffix = "~ipad";
-    }
-
-    if (app.activeDocument.layerSets.length <= 0) {
-        return;
-    }
-    var originalDoc = app.activeDocument; 
 }
 
 // tries to get export info from photoshop registry first; if not there, initializes defaults
