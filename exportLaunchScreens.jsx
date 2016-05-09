@@ -1,24 +1,23 @@
 ﻿#include "./utilities.jsx"
 
-// Exports groups, each as a separate PNG
+// Saves the entire .psd as a series of .pngs in all the sizes needed for the iOS launch screen
+// it is expected that the source art (the .psd) is the retina ipad size (1536x2048)
 
 var chooseValidFolder = "Please choose a valid folder to export to.";
+var correctSizeAlert = "Please ensure your document is 1536x2048 - the iPad Retina Portrait Size"
 var openDocAlert = "You must have the document you wish to export open.";
-var title = "Export groups as PNGs";
-var scaleLabel = "Scale";
+var title = "Export iOS Launch Screens";
 var exportLabel = "Export";
 var cancel = "Cancel";
 var destinationLabel = "Destination";
 var browse = "Browse";
 var notes = "Notes";
-var scaleNote = "1) Images will be exported at the scale you choose, and at all smaller scales.";
-var ignoreGroupNote = "2) If you don't want a group to be exported, include 'DONOTEXPORT' in its name.";
-var emptySpaceNote = "3) The script will crop empty space around a group.";
-var consistentSizeNote = "4) Alternatively, if you want to specify a size for a group, include a shape layer labeled 'SIZE'.";
-var ipadSpecific = "5) If you add '~ipad' to the working art file name, that will be added to the resulting file names (to let you export tablet-specific graphics)";
+var sourceArtSize = "1) Source art should be the iPad Retina size - 1536x2048.";
+var processNote = "2) The resulting images will be cropped and resized to fit the aspect ratio and size required for each device.";
+var avoidMistakesNote = "3) Put your art in the center, and double-check resulting images to make sure nothing important was trimmed.";
+var addToResources = "4) Be sure to add the resulting images to your Resources directory, and add them in your IDE.";
 var titleSelectDestination = "Select Destination";
-var visibleOnly = "Export only visible groups";
-var appDescriptor = "exportGroupsAtDifferentSizes";
+var appDescriptorName = "exportLaunchScreens";
 
 var artLayerLabelForSize = "SIZE";
 var layerSetLabelForDoNotExport = "DONOTEXPORT";
@@ -26,44 +25,6 @@ var specificScaleForLayerSetSeparator = "@";
 
 // consts
 var MAX_SCALE = 3;
-
-// dups active document, resizes it to the given width, and makes the dupped doc the active doc
-function dupActiveLayer(sourceArtScale, targetScale, layerSetName) {
-    
-    // from scripting listener - dups active layer into a new document
-    var idMk = charIDToTypeID( "Mk  " );
-    var desc39 = new ActionDescriptor();
-    var idnull = charIDToTypeID( "null" );
-    var ref13 = new ActionReference();
-    var idDcmn = charIDToTypeID( "Dcmn" );
-    ref13.putClass( idDcmn );
-    desc39.putReference( idnull, ref13 );
-    var idUsng = charIDToTypeID( "Usng" );
-    var ref14 = new ActionReference();
-    var idLyr = charIDToTypeID( "Lyr " );
-    var idOrdn = charIDToTypeID( "Ordn" );
-    var idTrgt = charIDToTypeID( "Trgt" );
-    ref14.putEnumerated( idLyr, idOrdn, idTrgt );
-    desc39.putReference( idUsng, ref14 );
-    var idVrsn = charIDToTypeID( "Vrsn" );
-    desc39.putInteger( idVrsn, 5 );
-    executeAction( idMk, desc39, DialogModes.NO );
-    
-    trimExtraSpace(app.activeDocument.activeLayer);
-    
-    //TODO - need to crop here
-    var oneXWidth = app.activeDocument.width / sourceArtScale;
-    var oneXHeight = app.activeDocument.width / sourceArtScale;
-    var newWidth = oneXWidth * currScale; // make each one 1x and then multipy by current scale factor
-    
-    if (targetScale == sourceArtScale) { // only want one alert per layer
-        if (oneXWidth.toString().indexOf(".") != -1 || oneXHeight.toString().indexOf(".") != -1) {
-            alert("Consider resizing or repositioning '" + layerSetName + "'. Its size (in both dimensions) should be divisible by " + sourceArtScale + 
-            ", and its x and y positions should be whole numbers.");
-        }
-    }
-    resizeActiveDocument(newWidth);
-}
 
 function trimExtraSpace(layerSet) {
     // get bounds of layer, if size layer exists
@@ -88,6 +49,56 @@ function trimExtraSpace(layerSet) {
     } 
 }
 
+function exportLaunchScreens(destination) {
+    var originalDoc = app.activeDocument;
+    app.activeDocument.duplicate();
+    
+    var sampler = app.activeDocument.colorSamplers.add([0, 0]); // get color at 0, 0 for extra space in resulting image
+    var upperLeftColor = sampler.color;
+    
+    // iPad Retina Portrait
+    saveFile("Default-Portrait@2x.png", destination);
+    
+    // iPad Retina Landscape
+    changeCanvasSize(2048, 1536, upperLeftColor);
+    saveFile("Default-Landscape@2x.png", destination);
+    
+    // reset
+    app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
+    app.activeDocument = originalDoc;
+    app.activeDocument.duplicate();
+
+    // iPad Non-retina Portrait
+    resizeActiveDocument(768);
+    saveFile("Default-Portrait.png", destination);
+    
+    // iPad Non-retina Landscape
+    changeCanvasSize(2048, 1536, upperLeftColor);
+    saveFile("Default-Landscape.png", destination);
+    
+    // reset
+    app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
+    app.activeDocument = originalDoc;
+    app.activeDocument.duplicate();
+    
+    // iPhone Retina (4 inch)
+    resizeActiveDocument(640);
+    changeCanvasSize(640, 1136, upperLeftColor);
+    saveFile("Default-568h@2x.png", destination);
+    
+    // iPhone Retina (3.5 inch)
+    changeCanvasSize(640, 960, upperLeftColor);
+    saveFile("Default@2x.png", destination);
+    
+    // iPhone Non-Retina 
+    resizeActiveDocument(320);
+    saveFile("Default.png", destination);
+    
+    app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
+    app.activeDocument = originalDoc;
+    
+}
+
 // export the given layer set; assumes that all layerSets and artLayers are invisible;
 // also assumes that the document that the layerSet belongs to is the active document
 function exportLayerSet(layerSet, currScale, destination, sourceArtScale, suffix) {
@@ -105,7 +116,7 @@ function exportLayerSet(layerSet, currScale, destination, sourceArtScale, suffix
         fileName += suffix;
     }
     
-    saveFile(fileName, destination);
+    saveFile(fileName, currScale, destination);
 }
 
 // finds the layer set (if there is one) that is targeted to the given scale, with the given name
@@ -131,77 +142,36 @@ function exportLayerSets(exportOptions) {
     if (app.activeDocument.layerSets.length <= 0) {
         return;
     }
-    var originalDoc = app.activeDocument;
-    var sourceArtScale = exportOptions.scale + 1; // export options' scale refers to the drop down index, which is off by one
-    for (currScale = sourceArtScale; currScale > 0; currScale--) {
-        
-        for( var i = 0; i < app.activeDocument.layerSets.length; i++) {
-            
-            // First check if we should skip exporting the current layer set
-            if (exportOptions.visibleOnly) { 
-                if (!originalDoc.layerSets[i].visible) {
-                    continue;
-                }
-            }
-            if (app.activeDocument.layerSets[i].name.indexOf(layerSetLabelForDoNotExport) != -1)
-                continue;
-        
-            app.activeDocument.activeLayer = app.activeDocument.layerSets[i];
-            dupActiveLayer(sourceArtScale, currScale, app.activeDocument.activeLayer.name); 
-              
-            exportLayerSet(app.activeDocument.activeLayer, currScale, exportOptions.destination, sourceArtScale, suffix);
-            
-            app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
-            app.activeDocument = originalDoc;
-        }
-    }       
+    var originalDoc = app.activeDocument; 
 }
 
 // tries to get export info from photoshop registry first; if not there, initializes defaults
 function getExportOptions() {
     try {
-        var d = app.getCustomOptions(appDescriptor);
+        var d = app.getCustomOptions(appDescriptorName);
         var exportOptions = getOptionsFromDescriptor(d);
     }
     catch(e) {
         var exportOptions = [];
         exportOptions.destination = new String("");
-        exportOptions.visibleOnly = false;
-        exportOptions.scale = 1;
     }
     return exportOptions;
 }
 
 function main() {   
+
     if (typeof(app) === "undefined" || typeof(app.documents) === "undefined" || app.documents.length <= 0) {
         alert(openDocAlert);
+        return 'cancel'; 
+    }
+    if (app.activeDocument.width != 1536 || app.activeDocument.height != 2048) {
+        alert(correctSizeAlert);
         return 'cancel'; 
     }
 
     var exportOptions = getExportOptions();
 
     dialog = new Window("dialog", title);
-
-    // add drop down to request source art size
-    dialog.panelScale = dialog.add("panel", undefined, scaleLabel);
-    dialog.panelScale.alignment = 'fill';
-    dialog.panelScale.alignChildren = 'left';
-    dialog.panelScale.orientation = 'row';
-    dialog.scale = dialog.panelScale.add("dropdownlist");
-    dialog.scale.preferredSize.height = 30;
-    dialog.scale.preferredSize.width = 60;
-
-    dialog.scale.add("item", "1x");
-    dialog.scale.add("item", "2x");
-    dialog.scale.add("item", "3x");
-    for (i = 0; i < dialog.scale.items.length; i++) {
-        if (dialog.scale.items[i].toString().indexOf(exportOptions.scale) != -1) {
-            dialog.scale.selection = i;
-        }
-    }
-    
-    dialog.onlyVisibleCheckbox = dialog.panelScale.add("checkbox", undefined, visibleOnly);
-    dialog.onlyVisibleCheckbox.value = exportOptions.visibleOnly;
 
     // add destination panel
     dialog.panelDest = dialog.add("panel", undefined, destinationLabel);
@@ -242,13 +212,11 @@ function main() {
             return;
         }
         
-        exportOptions.scale = dialog.scale.selection;
-        exportOptions.visibleOnly = dialog.onlyVisibleCheckbox.value;
         exportOptions.destination = dialog.destination.text;
         
-        app.putCustomOptions(appDescriptor, getDescriptorFromOptions(exportOptions), true);
+        app.putCustomOptions(appDescriptorName, getDescriptorFromOptions(exportOptions), true);
             
-        exportLayerSets(exportOptions);
+        exportLaunchScreens(exportOptions.destination);
         dialog.close();
     }
 
@@ -256,11 +224,10 @@ function main() {
     dialog.panelNotes.alignment = 'fill';
     dialog.panelNotes.orientation = 'column';
     dialog.panelNotes.alignChildren = 'left';
-    dialog.panelNotes.add("statictext", undefined, scaleNote);
-    dialog.panelNotes.add("statictext", undefined, ignoreGroupNote);
-    dialog.panelNotes.add("statictext", undefined, emptySpaceNote);
-    dialog.panelNotes.add("statictext", undefined, consistentSizeNote);
-    dialog.panelNotes.add("statictext", undefined, ipadSpecific);
+    dialog.panelNotes.add("statictext", undefined, sourceArtSize);
+    dialog.panelNotes.add("statictext", undefined, processNote);
+    dialog.panelNotes.add("statictext", undefined, avoidMistakesNote);
+    dialog.panelNotes.add("statictext", undefined, addToResources);
 
     var result = dialog.show();
 }
