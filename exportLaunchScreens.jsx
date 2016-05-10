@@ -37,6 +37,16 @@ function exportLaunchScreens(destination) {
     app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
     app.activeDocument = originalDoc;
     app.activeDocument.duplicate();
+    
+    // iPhone 6 Plus
+    resizeActiveDocument(1242);
+    changeCanvasSize(1242, 2208, upperLeftColor);
+    saveFile("Default-736h@3x.png", destination);
+    
+    // iPhone 6
+    resizeActiveDocument(750);
+    changeCanvasSize(750, 1334, upperLeftColor);
+    saveFile("Default-667h@3x.png", destination);
 
     // iPad Non-retina Portrait
     resizeActiveDocument(768);
