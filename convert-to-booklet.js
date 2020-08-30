@@ -1,7 +1,8 @@
 ﻿/* This script converts a series of .jpgs into another series of .jpgs that can 
 be printed as a booklet. Each original .jpg is a spread in a book. The script
 recombines the image halves to allow you to print the resulting .jpgs double-
-sided, and fold into a booklet.*/
+sided, and fold into a booklet. The image spreads should be in alpha-numeric
+order, with the exception of the cover, which should be named "cover".*/
 
 var title = "Convert to Printable Booklet";
 
