@@ -42,8 +42,8 @@ function main() {
 	win.select.onClick=function() {
 		var row = win.pnl1.input1.text;
 		var column = win.pnl1.input2.text;
-		var shouldExportThumbnail = win.pnl2.cb1;
-		var shouldExportBigPicture = win.pnl2.cb2;
+		var shouldExportThumbnail = win.pnl2.cb1.value;
+		var shouldExportBigPicture = win.pnl2.cb2.value;
 		win.close(0);
 
 		var savedState = app.activeDocument.activeHistoryState;
