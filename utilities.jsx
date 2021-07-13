@@ -89,6 +89,18 @@ function saveFile(fileName, destination) {
     }
 }
 
+// Saves the app.activeDocument as a jpg with the given file name in the given folder
+function saveJpg(destinationFolder, fileName) {
+    var jpgOptions = new JPEGSaveOptions();
+    jpgOptions.quality = 12;
+    jpgOptions.embedColorProfile = true;
+    jpgOptions.formatOptions = FormatOptions.PROGRESSIVE;
+    if(jpgOptions.formatOptions == FormatOptions.PROGRESSIVE){
+    jpgOptions.scans = 5};
+    jpgOptions.matte = MatteType.NONE;
+    app.activeDocument.saveAs (new File(destinationFolder +'/' + fileName + '.jpg'), jpgOptions);
+}
+
 // Returns an object that represents options set in the given descriptor;
 // for persitent options
 function getOptionsFromDescriptor(desc) {
