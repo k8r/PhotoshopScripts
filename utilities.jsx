@@ -92,7 +92,7 @@ function saveFile(fileName, destination) {
 // Saves the app.activeDocument as a jpg with the given file name in the given folder
 function saveJpg(destinationFolder, fileName) {
     var jpgOptions = new JPEGSaveOptions();
-    jpgOptions.quality = 12;
+    jpgOptions.quality = 8;
     jpgOptions.embedColorProfile = true;
     jpgOptions.formatOptions = FormatOptions.PROGRESSIVE;
     if(jpgOptions.formatOptions == FormatOptions.PROGRESSIVE){

@@ -20,10 +20,9 @@ function main() {
 	var win = new Window('dialog','Settings for export');
 	win.orientation='column';
 	win.alignChildren = 'center';
-	win.pnl1 = win.add('panel',undefined,'Row and Column', {borderStyle: 'black'} );
+	win.pnl1 = win.add('panel',undefined,'Image Number', {borderStyle: 'black'} );
 	win.pnl1.alignChildren = 'center';
 	win.pnl1.input1 = win.pnl1.add('edittext',undefined,'1');
-	win.pnl1.input2 = win.pnl1.add('edittext',undefined,'1');
 	
 
 	win.pnl2 = win.add('panel',undefined,'', {borderStyle: 'black'} );
@@ -40,8 +39,7 @@ function main() {
 	win.select.preferredSize = win.can.preferredSize=[70,20];
 
 	win.select.onClick=function() {
-		var row = win.pnl1.input1.text;
-		var column = win.pnl1.input2.text;
+		var imgNum = win.pnl1.input1.text;
 		var shouldExportThumbnail = win.pnl2.cb1.value;
 		var shouldExportBigPicture = win.pnl2.cb2.value;
 		win.close(0);
@@ -51,7 +49,7 @@ function main() {
 		if (shouldExportBigPicture) {
 			for (var i = 0; i < sizesForBigPicture.length; i++) {
 			 	app.activeDocument.resizeImage(sizesForBigPicture[i]);
-			 	saveJpg(outputDirectory, "Row" + row + "Col" + column + "Big" + fileNameEndsForBigPicture[i]);
+			 	saveJpg(outputDirectory, "Num" + imgNum + "Big" + fileNameEndsForBigPicture[i]);
 			 	app.activeDocument.activeHistoryState = savedState
 			}
 		}
@@ -59,7 +57,7 @@ function main() {
 		if (shouldExportThumbnail) {
 			for (var i = 0; i < sizesForThumbnail.length; i++) {
 			 	app.activeDocument.resizeImage(sizesForThumbnail[i]);
-			 	saveJpg(outputDirectory, "Row" + row + "Col" + column + "Thumb" + fileNameEndsForThumbnail[i]);
+			 	saveJpg(outputDirectory, "Num" + imgNum + "Thumb" + fileNameEndsForThumbnail[i]);
 			 	app.activeDocument.activeHistoryState = savedState
 			}
 		}
