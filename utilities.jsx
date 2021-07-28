@@ -21,6 +21,22 @@ function resizeActiveDocument(newWidth) {
     executeAction( idImgS, desc4, DialogModes.NO );
 }
 
+/* returns files in the given directory whose names match the given
+regular expression */
+function getFileNamesThatContain(path, re) {
+    var topFolder = new Folder(path);
+    var files = topFolder.getFiles();
+
+    var expression = new RegExp(re);
+    var filesThatMatch = [];
+    for (var i = 0; i < files.length; i++) {
+        if (expression.test(files[i])) {
+            filesThatMatch[filesThatMatch.length] = files[i];
+        }
+    }
+    return filesThatMatch;
+}
+
 function changeCanvasSize(newWidth, newHeight, newBgColor) {
     var oldBgColor = app.backgroundColor; 
     app.backgroundColor = newBgColor;

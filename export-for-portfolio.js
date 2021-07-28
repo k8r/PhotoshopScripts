@@ -7,11 +7,11 @@ is for updating images on my portfolio - katemariephillips.com - faster.
 
 var outputDirectory = "/Users/kate/src/katesportfolio/HTML/assets/images/portfolio2";
 
-const sizesForThumbnail = [600, 200]; 
-const fileNameEndsForThumbnail = ["HiRes", "LowRes"];
+const sizesForThumbnail = [600, 400, 200]; 
+const fileNameEndsForThumbnail = ["HiRes", "MidRes", "LowRes"];
 
-const sizesForBigPicture = [1500, 500]; 
-const fileNameEndsForBigPicture = ["HiRes", "LowRes"];
+const sizesForBigPicture = [1500, 1000, 500]; 
+const fileNameEndsForBigPicture = ["HiRes", "MidRes", "LowRes"];
 
 const sizesForBigImage = [];
 
