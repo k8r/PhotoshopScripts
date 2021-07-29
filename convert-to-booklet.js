@@ -29,6 +29,7 @@ function main() {
     currDoc.close(SaveOptions.DONOTSAVECHANGES);
     
     combineDocuments(open(spreads[1]), open(spreads[spreads.length - 1]), "sheet1-side2", newFolder);
+    alert("The order is: " + spreads);
     
     if (spreads.length <= 2)
         return;
