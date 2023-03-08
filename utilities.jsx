@@ -117,6 +117,15 @@ function saveJpg(destinationFolder, fileName) {
     app.activeDocument.saveAs (new File(destinationFolder +'/' + fileName + '.jpg'), jpgOptions);
 }
 
+function getLayerSetNamed(name) {
+    var sets = app.activeDocument.layerSets;
+    for (var i = 0; i < sets.length; i++ ) {
+        if (sets[i].name == name)
+            return sets[i];
+    }
+    return undefined;
+}
+
 // Returns an object that represents options set in the given descriptor;
 // for persitent options
 function getOptionsFromDescriptor(desc) {
