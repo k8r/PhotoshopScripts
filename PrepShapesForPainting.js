@@ -188,12 +188,17 @@ function main() {
 
         // create two new layers to go into the new group/layer set
         var shadingLayer = app.activeDocument.artLayers.add();
+        shadingLayer.move(newLayerSet, ElementPlacement.INSIDE);
         shadingLayer.name = "shading";
         shadingLayer.blendMode = BlendMode.MULTIPLY;
+
         var highlightsLayer = app.activeDocument.artLayers.add();
         highlightsLayer.name = "highlights";
         highlightsLayer.move(newLayerSet, ElementPlacement.INSIDE);
-        shadingLayer.move(newLayerSet, ElementPlacement.INSIDE);
+
+        shadingLayer.grouped = true;
+        highlightsLayer.grouped = true;
+        
 
         // collapse all layer sets / groups
         var idcollapseAllGroupsEvent = stringIDToTypeID("collapseAllGroupsEvent");
