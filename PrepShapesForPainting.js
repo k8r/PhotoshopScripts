@@ -177,14 +177,29 @@ function main() {
         alert(openDocAlert);
         return 'cancel'; 
     }
-    var shapesGroup = getLayerSetNamed("shapes");
-    for (var i = 0; i < shapesGroup.layers.length; i++ ) {
-        alert(shapesGroup.layers[i]);
+    var shapesLayerSet = getLayerSetNamed("shapes");
+    for (var i = 0; i < shapesLayerSet.layers.length; i++) {
+        var currLayer = shapesLayerSet.layers[i];
+
+        // move current layer to a new group/layer set
+        var newLayerSet = shapesLayerSet.layerSets.add();
+        newLayerSet.name = currLayer.name;
+        currLayer.move(newLayerSet, ElementPlacement.INSIDE);
+
+        // create two new layers to go into the new group/layer set
+        var shadingLayer = app.activeDocument.artLayers.add();
+        shadingLayer.name = "shading";
+        shadingLayer.blendMode = BlendMode.MULTIPLY;
+        var highlightsLayer = app.activeDocument.artLayers.add();
+        highlightsLayer.name = "highlights";
+        highlightsLayer.move(newLayerSet, ElementPlacement.INSIDE);
+        shadingLayer.move(newLayerSet, ElementPlacement.INSIDE);
+
+        // collapse all layer sets / groups
+        var idcollapseAllGroupsEvent = stringIDToTypeID("collapseAllGroupsEvent");
+        var desc = new ActionDescriptor();
+        executeAction(idcollapseAllGroupsEvent, desc, DialogModes.NO);
     }
-
-
-    var newLayer = app.activeDocument.artLayers.add();
-    alert(newLayer);
 
     // add drop down to request source art size
     // dialog.panelScale = dialog.add("panel", undefined, scaleLabel);
