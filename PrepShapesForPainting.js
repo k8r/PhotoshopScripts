@@ -172,6 +172,49 @@ function getExportOptions() {
     return exportOptions;
 }
 
+function createShadingAndHighlightLayers(destinationSet) {
+     // create two new layers to go into the new group/layer set
+     var shadingLayer = app.activeDocument.artLayers.add();
+     shadingLayer.move(destinationSet, ElementPlacement.INSIDE);
+     shadingLayer.name = "shading";
+     shadingLayer.blendMode = BlendMode.MULTIPLY;
+
+     var highlightsLayer = app.activeDocument.artLayers.add();
+     highlightsLayer.name = "highlights";
+     highlightsLayer.move(destinationSet, ElementPlacement.INSIDE);
+
+     shadingLayer.grouped = true;
+     highlightsLayer.grouped = true;
+}
+
+function selectPixelsOnActiveLayer() {
+    sTT = stringIDToTypeID;
+
+    (ref1 = new ActionReference()).putProperty(c = sTT('channel'), sTT('selection'));
+    (dsc = new ActionDescriptor()).putReference(sTT('null'), ref1);
+    (ref2 = new ActionReference()).putEnumerated(c, c, sTT('transparencyEnum'))
+    dsc.putReference(sTT('to'), ref2), executeAction(sTT('set'), dsc);
+}
+
+function createRingAroundSelection() {
+    var baseRingWidth = 3;
+
+    selectPixelsOnActiveLayer();
+    app.activeDocument.selection.contract(baseRingWidth);
+    app.activeDocument.selection.clear();
+    app.activeDocument.selection.deselect();
+}
+
+function resizeLayer(factor) {
+    var LB = activeDocument.activeLayer.bounds; 
+    var width= LB[2].value - LB[0].value; 
+    var height = LB[3].value - LB[1].value;
+    var newSize = width * factor;  // percent
+    var newHSize = height * factor;  // percent
+    alert(newSize + " " + newHSize);
+    app.activeDocument.activeLayer.resize( newSize ,  newHSize, AnchorPosition.MIDDLECENTER);  
+}
+
 function main() {   
     if (typeof(app) === "undefined" || typeof(app.documents) === "undefined" || app.documents.length <= 0) {
         alert(openDocAlert);
@@ -186,24 +229,20 @@ function main() {
         newLayerSet.name = currLayer.name;
         currLayer.move(newLayerSet, ElementPlacement.INSIDE);
 
-        // create two new layers to go into the new group/layer set
-        var shadingLayer = app.activeDocument.artLayers.add();
-        shadingLayer.move(newLayerSet, ElementPlacement.INSIDE);
-        shadingLayer.name = "shading";
-        shadingLayer.blendMode = BlendMode.MULTIPLY;
+        var firstRingLayer = currLayer.duplicate(newLayerSet, ElementPlacement.PLACEATEND);
+        app.activeDocument.activeLayer = firstRingLayer;
+        createRingAroundSelection();
+        resizeLayer(1.25);
+        return;
 
-        var highlightsLayer = app.activeDocument.artLayers.add();
-        highlightsLayer.name = "highlights";
-        highlightsLayer.move(newLayerSet, ElementPlacement.INSIDE);
-
-        shadingLayer.grouped = true;
-        highlightsLayer.grouped = true;
-        
+        //createShadingAndHighlightLayers(newLayerSet);
 
         // collapse all layer sets / groups
         var idcollapseAllGroupsEvent = stringIDToTypeID("collapseAllGroupsEvent");
         var desc = new ActionDescriptor();
         executeAction(idcollapseAllGroupsEvent, desc, DialogModes.NO);
+
+
     }
 
     // add drop down to request source art size
