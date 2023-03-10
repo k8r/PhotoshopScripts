@@ -43,29 +43,77 @@ function createRingAndOffset(x, y, layer, layerSet) {
     app.activeDocument.activeLayer.translate(new UnitValue( x, 'px' ),y);
 }
 
+function getLayerIndexByID(ID) {
+    var ref = new ActionReference();
+    ref.putIdentifier( charIDToTypeID('Lyr '), ID );
+    
+    try { 
+    
+        activeDocument.backgroundLayer; 
+        return executeActionGet(ref).getInteger(charIDToTypeID( "ItmI" ))-1; 
+    
+    } catch(e) { 
+        return executeActionGet(ref).getInteger(charIDToTypeID( "ItmI" )); 
+    }
+}
+
+function moveLayerToLayerSet( fromID, toID ) {
+
+    var desc = new ActionDescriptor();
+    var ref = new ActionReference();
+    
+    ref.putIdentifier( charIDToTypeID('Lyr '), Number(fromID) );
+    desc.putReference( charIDToTypeID('null'), ref );
+    
+    var ref2 = new ActionReference();
+    ref2.putIndex( charIDToTypeID('Lyr '), getLayerIndexByID(toID) );
+    desc.putReference( charIDToTypeID('T   '), ref2 );
+    desc.putBoolean( charIDToTypeID('Adjs'), false );
+    desc.putInteger( charIDToTypeID('Vrsn'), 5 );
+    
+    try {
+        executeAction( charIDToTypeID('move'), desc, DialogModes.NO );
+    } catch(e){ alert(e); }
+}
+
+function moveLayerSetIntoAnother(destinationSet, set) {
+    activeDocument.activeLayer = set;
+    var fromID =  activeDocument.activeLayer.id;
+
+    activeDocument.activeLayer = destinationSet; 
+    var toID = activeDocument.activeLayer.id;
+
+    moveLayerToLayerSet( fromID, toID);
+}
+
 function main() {   
     if (typeof(app) === "undefined" || typeof(app.documents) === "undefined" || app.documents.length <= 0) {
         alert(openDocAlert);
         return 'cancel'; 
     }
+
+    var newShapesLayerSet = app.activeDocument.layerSets.add();
+    newShapesLayerSet.name = "preppedShapes";
+
     var shapesLayerSet = getLayerSetNamed("shapes");
-    for (var i = 0; i < shapesLayerSet.layers.length; i++) {
+    // iterate through backwards to keep the same order in the destination layer set; layer sets are always added on top
+    for (var i = shapesLayerSet.layers.length - 1; i > -1; i--) { 
         var currLayer = shapesLayerSet.layers[i];
 
         // move current layer to a new group/layer set
-        var newLayerSet = shapesLayerSet.layerSets.add(ElementPlacement.PLACEBEFORE);
+        var newLayerSet = newShapesLayerSet.layerSets.add(ElementPlacement.INSIDE);
         newLayerSet.name = currLayer.name;
-        currLayer.move(newLayerSet, ElementPlacement.INSIDE);
+        currLayer = currLayer.duplicate(newLayerSet, ElementPlacement.INSIDE);
 
         // contract the layer so adding the rings doesn't make it too big
         app.activeDocument.activeLayer = currLayer;
         selectPixelsOnActiveLayer();
-        app.activeDocument.selection.contract(BASE_RING_WIDTH);
+        app.activeDocument.selection.contract(BASE_RING_WIDTH*2);
         app.activeDocument.selection.invert();
         app.activeDocument.selection.clear();
         app.activeDocument.selection.deselect();
 
-        // // create and semi randomize the rings
+        // create and semi randomize the rings
         createRingAndOffset(BASE_RING_WIDTH, -1*BASE_RING_WIDTH, currLayer, newLayerSet);
         createRingAndOffset(-1*BASE_RING_WIDTH, BASE_RING_WIDTH, currLayer, newLayerSet);
         createRingAndOffset(BASE_RING_WIDTH, BASE_RING_WIDTH, currLayer, newLayerSet);
@@ -79,8 +127,6 @@ function main() {
         app.activeDocument.activeLayer.opacity = 50;
         createRingAndOffset(-3*BASE_RING_WIDTH, -2*BASE_RING_WIDTH, currLayer, newLayerSet);
         app.activeDocument.activeLayer.opacity = 60;
-        
-        // return;
 
         createShadingAndHighlightLayers(newLayerSet);
 
@@ -89,8 +135,16 @@ function main() {
         var desc = new ActionDescriptor();
         executeAction(idcollapseAllGroupsEvent, desc, DialogModes.NO);
 
-
     }
+
+    // move the shapes to a new layer set to reorder them
+    // var newShapesLayerSet = app.activeDocument.layerSets.add();
+    // newShapesLayerSet.name = "preppedShapes";
+    // for (var i = 0; i < shapesLayerSet.layerSets.length; i++) {
+    //     alert(shapesLayerSet.layerSets[i] + " " + newShapesLayerSet);
+    //     //shapesLayerSet.layerSets[i].move(newShapesLayerSet);
+    //     moveLayerSetIntoAnother(newShapesLayerSet, shapesLayerSet);
+    // }
 
     // add drop down to request source art size
     // dialog.panelScale = dialog.add("panel", undefined, scaleLabel);
