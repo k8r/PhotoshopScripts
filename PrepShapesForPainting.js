@@ -1,176 +1,7 @@
 ﻿// @include "./utilities.jsx"
 
-// Exports groups, each as a separate PNG
-
-var chooseValidFolder = "Please choose a valid folder to export to.";
-var openDocAlert = "You must have the document you wish to export open.";
-var title = "Export groups as PNGs";
-var scaleLabel = "Scale";
-var exportLabel = "Export";
-var cancel = "Cancel";
-var destinationLabel = "Destination";
-var browse = "Browse";
-var notes = "Notes";
-var scaleNote = "1) Images will be exported at the scale you choose, and at all smaller scales.";
-var ignoreGroupNote = "2) If you don't want a group to be exported, include 'DONOTEXPORT' in its name.";
-var emptySpaceNote = "3) The script will crop empty space around a group.";
-var consistentSizeNote = "4) Alternatively, if you want to specify a size for a group, include a shape layer labeled 'SIZE'.";
-var ipadSpecific = "5) If you add '~ipad' to the working art file name, that will be added to the resulting file names (to let you export tablet-specific graphics)";
-var titleSelectDestination = "Select Destination";
-var visibleOnly = "Export only visible groups";
-var appDescriptor = "exportGroupsAtDifferentSizes";
-
-var artLayerLabelForSize = "SIZE";
-var layerSetLabelForDoNotExport = "DONOTEXPORT";
-var specificScaleForLayerSetSeparator = "@";
-
-// consts
-var MAX_SCALE = 3;
-
-// dups active document, resizes it to the given width, and makes the dupped doc the active doc
-function dupActiveLayer(sourceArtScale, targetScale, layerSetName) {
-    
-    // from scripting listener - dups active layer into a new document
-    var idMk = charIDToTypeID( "Mk  " );
-    var desc39 = new ActionDescriptor();
-    var idnull = charIDToTypeID( "null" );
-    var ref13 = new ActionReference();
-    var idDcmn = charIDToTypeID( "Dcmn" );
-    ref13.putClass( idDcmn );
-    desc39.putReference( idnull, ref13 );
-    var idUsng = charIDToTypeID( "Usng" );
-    var ref14 = new ActionReference();
-    var idLyr = charIDToTypeID( "Lyr " );
-    var idOrdn = charIDToTypeID( "Ordn" );
-    var idTrgt = charIDToTypeID( "Trgt" );
-    ref14.putEnumerated( idLyr, idOrdn, idTrgt );
-    desc39.putReference( idUsng, ref14 );
-    var idVrsn = charIDToTypeID( "Vrsn" );
-    desc39.putInteger( idVrsn, 5 );
-    executeAction( idMk, desc39, DialogModes.NO );
-    
-    trimExtraSpace(app.activeDocument.activeLayer);
-    
-    //TODO - need to crop here
-    var oneXWidth = app.activeDocument.width / sourceArtScale;
-    var oneXHeight = app.activeDocument.width / sourceArtScale;
-    var newWidth = oneXWidth * currScale; // make each one 1x and then multipy by current scale factor
-    
-    if (targetScale == sourceArtScale) { // only want one alert per layer
-        if (oneXWidth.toString().indexOf(".") != -1 || oneXHeight.toString().indexOf(".") != -1) {
-            alert("Consider resizing or repositioning '" + layerSetName + "'. Its size (in both dimensions) should be divisible by " + sourceArtScale + 
-            ", and its x and y positions should be whole numbers.");
-        }
-    }
-    resizeActiveDocument(newWidth);
-}
-
-function trimExtraSpace(layerSet) {
-    // get bounds of layer, if size layer exists
-    // make size layer invisible if it exists
-    // make other art layers visible
-    var bounds = [];
-    layerSet.visible = true;
-    for ( var j = 0; j < layerSet.artLayers.length; j++) {
-        layerSet.artLayers[j].visible = true;
-        if (layerSet.artLayers[j].name.indexOf(artLayerLabelForSize) != -1) {
-            bounds = layerSet.artLayers[j].bounds;
-            layerSet.artLayers[j].visible = false;
-        }
-    }
-    
-    // crop doc to bounds from size art layer, or trim transparency if no size art layer
-    if (bounds.length > 0) {
-        app.activeDocument.crop(bounds);
-      }
-    else {
-        app.activeDocument.trim(TrimType.TRANSPARENT);
-    } 
-}
-
-// export the given layer set; assumes that all layerSets and artLayers are invisible;
-// also assumes that the document that the layerSet belongs to is the active document
-function exportLayerSet(layerSet, currScale, destination, sourceArtScale, suffix) {
-
-    var fileName = layerSet.name.replace(/[:\/\\*\?\"\<\>\|]/g, "_");  // replace special chars with an underscore
-    if (fileName.length > 120) {
-        fileName = fileName.substring(0, 120);
-    }
-    var fileNameParts = fileName.split(specificScaleForLayerSetSeparator);
-    fileName = fileNameParts[0];
-    if (currScale > 1) {
-        fileName = fileName + specificScaleForLayerSetSeparator + currScale + "x";
-    }
-    if (suffix != null) {
-        fileName += suffix;
-    }
-    
-    saveFile(fileName, destination);
-}
-
-// finds the layer set (if there is one) that is targeted to the given scale, with the given name
-// for instance, if you want to have your 1x image be different from 2x and 3x, you would name 
-// it nameOfImage@1x (an image corresponds to a layer set) 
-function findLayerSetForScale(scale, layerSetName) {
-    for( var i = 0; i < app.activeDocument.layerSets.length; i++) {
-        var parts = layerSetName.split(specificScaleForLayerSetSeparator);
-        if (app.activeDocument.layerSets[i].name.indexOf(parts[0] + specificScaleForLayerSetSeparator + scale) != -1) {
-            return app.activeDocument.layerSets[i].name;
-        }
-    }
-    return null;
-}
-
-function exportLayerSets(exportOptions) {
-
-    var suffix = null;
-    if (app.activeDocument.name.indexOf("~ipad") != -1) {
-        suffix = "~ipad";
-    }
-
-    if (app.activeDocument.layerSets.length <= 0) {
-        return;
-    }
-    var originalDoc = app.activeDocument;
-    var sourceArtScale = exportOptions.scale + 1; // export options' scale refers to the drop down index, which is off by one
-    for (currScale = sourceArtScale; currScale > 0; currScale--) {
-        
-        for( var i = 0; i < app.activeDocument.layerSets.length; i++) {
-            
-            // First check if we should skip exporting the current layer set
-            if (exportOptions.visibleOnly) { 
-                if (!originalDoc.layerSets[i].visible) {
-                    continue;
-                }
-            }
-            if (app.activeDocument.layerSets[i].name.indexOf(layerSetLabelForDoNotExport) != -1)
-                continue;
-        
-            app.activeDocument.activeLayer = app.activeDocument.layerSets[i];
-            dupActiveLayer(sourceArtScale, currScale, app.activeDocument.activeLayer.name); 
-              
-            exportLayerSet(app.activeDocument.activeLayer, currScale, exportOptions.destination, sourceArtScale, suffix);
-            
-            app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
-            app.activeDocument = originalDoc;
-        }
-    }       
-}
-
-// tries to get export info from photoshop registry first; if not there, initializes defaults
-function getExportOptions() {
-    try {
-        var d = app.getCustomOptions(appDescriptor);
-        var exportOptions = getOptionsFromDescriptor(d);
-    }
-    catch(e) {
-        var exportOptions = [];
-        exportOptions.destination = new String("");
-        exportOptions.visibleOnly = false;
-        exportOptions.scale = 1;
-    }
-    return exportOptions;
-}
+var BASE_RING_WIDTH = 3;
+var PERCENT_TO_RESIZE_RING_WIDTH = 101;
 
 function createShadingAndHighlightLayers(destinationSet) {
      // create two new layers to go into the new group/layer set
@@ -197,22 +28,19 @@ function selectPixelsOnActiveLayer() {
 }
 
 function createRingAroundSelection() {
-    var baseRingWidth = 3;
-
     selectPixelsOnActiveLayer();
-    app.activeDocument.selection.contract(baseRingWidth);
+    app.activeDocument.selection.contract(BASE_RING_WIDTH);
     app.activeDocument.selection.clear();
     app.activeDocument.selection.deselect();
 }
 
-function resizeLayer(factor) {
-    var LB = activeDocument.activeLayer.bounds; 
-    var width= LB[2].value - LB[0].value; 
-    var height = LB[3].value - LB[1].value;
-    var newSize = width * factor;  // percent
-    var newHSize = height * factor;  // percent
-    alert(newSize + " " + newHSize);
-    app.activeDocument.activeLayer.resize( newSize ,  newHSize, AnchorPosition.MIDDLECENTER);  
+function createRingAndOffset(x, y, layer, layerSet) {
+    var firstRingLayer = layer.duplicate(layerSet, ElementPlacement.PLACEATEND);
+    app.activeDocument.activeLayer = firstRingLayer;
+    createRingAroundSelection();
+    app.activeDocument.activeLayer.resize(PERCENT_TO_RESIZE_RING_WIDTH, PERCENT_TO_RESIZE_RING_WIDTH, 
+        AnchorPosition.MIDDLECENTER);
+    app.activeDocument.activeLayer.translate(new UnitValue( x, 'px' ),y);
 }
 
 function main() {   
@@ -225,17 +53,36 @@ function main() {
         var currLayer = shapesLayerSet.layers[i];
 
         // move current layer to a new group/layer set
-        var newLayerSet = shapesLayerSet.layerSets.add();
+        var newLayerSet = shapesLayerSet.layerSets.add(ElementPlacement.PLACEBEFORE);
         newLayerSet.name = currLayer.name;
         currLayer.move(newLayerSet, ElementPlacement.INSIDE);
 
-        var firstRingLayer = currLayer.duplicate(newLayerSet, ElementPlacement.PLACEATEND);
-        app.activeDocument.activeLayer = firstRingLayer;
-        createRingAroundSelection();
-        resizeLayer(1.25);
-        return;
+        // contract the layer so adding the rings doesn't make it too big
+        app.activeDocument.activeLayer = currLayer;
+        selectPixelsOnActiveLayer();
+        app.activeDocument.selection.contract(BASE_RING_WIDTH);
+        app.activeDocument.selection.invert();
+        app.activeDocument.selection.clear();
+        app.activeDocument.selection.deselect();
 
-        //createShadingAndHighlightLayers(newLayerSet);
+        // // create and semi randomize the rings
+        createRingAndOffset(BASE_RING_WIDTH, -1*BASE_RING_WIDTH, currLayer, newLayerSet);
+        createRingAndOffset(-1*BASE_RING_WIDTH, BASE_RING_WIDTH, currLayer, newLayerSet);
+        createRingAndOffset(BASE_RING_WIDTH, BASE_RING_WIDTH, currLayer, newLayerSet);
+        createRingAndOffset(-1*BASE_RING_WIDTH, -1*BASE_RING_WIDTH, currLayer, newLayerSet);
+
+        // createRingAndOffset(BASE_RING_WIDTH*3, -2*BASE_RING_WIDTH, currLayer, newLayerSet);
+        app.activeDocument.activeLayer.opacity = 70;
+        createRingAndOffset(-2*BASE_RING_WIDTH, BASE_RING_WIDTH*2, currLayer, newLayerSet);
+        app.activeDocument.activeLayer.opacity = 80;
+        createRingAndOffset(BASE_RING_WIDTH*2, BASE_RING_WIDTH*2, currLayer, newLayerSet);
+        app.activeDocument.activeLayer.opacity = 50;
+        createRingAndOffset(-3*BASE_RING_WIDTH, -2*BASE_RING_WIDTH, currLayer, newLayerSet);
+        app.activeDocument.activeLayer.opacity = 60;
+        
+        // return;
+
+        createShadingAndHighlightLayers(newLayerSet);
 
         // collapse all layer sets / groups
         var idcollapseAllGroupsEvent = stringIDToTypeID("collapseAllGroupsEvent");
