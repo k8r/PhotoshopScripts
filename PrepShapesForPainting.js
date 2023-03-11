@@ -43,55 +43,24 @@ function createRingAndOffset(x, y, layer, layerSet) {
     app.activeDocument.activeLayer.translate(new UnitValue( x, 'px' ),y);
 }
 
-function getLayerIndexByID(ID) {
-    var ref = new ActionReference();
-    ref.putIdentifier( charIDToTypeID('Lyr '), ID );
-    
-    try { 
-    
-        activeDocument.backgroundLayer; 
-        return executeActionGet(ref).getInteger(charIDToTypeID( "ItmI" ))-1; 
-    
-    } catch(e) { 
-        return executeActionGet(ref).getInteger(charIDToTypeID( "ItmI" )); 
-    }
-}
-
-function moveLayerToLayerSet( fromID, toID ) {
-
-    var desc = new ActionDescriptor();
-    var ref = new ActionReference();
-    
-    ref.putIdentifier( charIDToTypeID('Lyr '), Number(fromID) );
-    desc.putReference( charIDToTypeID('null'), ref );
-    
-    var ref2 = new ActionReference();
-    ref2.putIndex( charIDToTypeID('Lyr '), getLayerIndexByID(toID) );
-    desc.putReference( charIDToTypeID('T   '), ref2 );
-    desc.putBoolean( charIDToTypeID('Adjs'), false );
-    desc.putInteger( charIDToTypeID('Vrsn'), 5 );
-    
-    try {
-        executeAction( charIDToTypeID('move'), desc, DialogModes.NO );
-    } catch(e){ alert(e); }
-}
-
-function moveLayerSetIntoAnother(destinationSet, set) {
-    activeDocument.activeLayer = set;
-    var fromID =  activeDocument.activeLayer.id;
-
-    activeDocument.activeLayer = destinationSet; 
-    var toID = activeDocument.activeLayer.id;
-
-    moveLayerToLayerSet( fromID, toID);
-}
-
 function main() {   
     if (typeof(app) === "undefined" || typeof(app.documents) === "undefined" || app.documents.length <= 0) {
         alert(openDocAlert);
         return 'cancel'; 
     }
 
+    // add texture layer to use later
+    var fileRef = "/Users/kate/src/PhotoshopScripts/Texture.jpg";
+    app.open(new File( fileRef ));
+    var mainDoc = app.documents[0];
+    var textureDoc = app.documents[1];
+    activeDocument = textureDoc;
+    var curLayer = textureDoc.activeLayer;
+
+    curLayer.duplicate (mainDoc, ElementPlacement.PLACEATEND);
+    activeDocument = mainDoc;
+
+    // create new shapes layer to copy existing shapes to and manipulate
     var newShapesLayerSet = app.activeDocument.layerSets.add();
     newShapesLayerSet.name = "preppedShapes";
 
