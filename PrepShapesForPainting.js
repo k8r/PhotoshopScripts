@@ -96,6 +96,11 @@ function main() {
                 ring.opacity = 50;
             }
         }
+        // merge all the rings down
+        for (var j = 0; j < 8; j++) {
+            app.activeDocument.activeLayer = currLayer;
+            currLayer = app.activeDocument.activeLayer.merge();
+        }
 
         createShadingAndHighlightLayers(newLayerSet);
 
