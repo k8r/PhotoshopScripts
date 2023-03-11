@@ -41,6 +41,13 @@ function createRingAndOffset(x, y, layer, layerSet) {
     app.activeDocument.activeLayer.resize(PERCENT_TO_RESIZE_RING_WIDTH, PERCENT_TO_RESIZE_RING_WIDTH, 
         AnchorPosition.MIDDLECENTER);
     app.activeDocument.activeLayer.translate(new UnitValue( x, 'px' ),y);
+    return firstRingLayer;
+}
+
+function createRing(baseNumToRandomize, layer, layerSet, textureLayer, angleToRotate) {
+    var x = Math.floor(Math.random() * (baseNumToRandomize * 3 - (-3 * baseNumToRandomize) + 1) + (-3 * baseNumToRandomize));
+    var y = Math.floor(Math.random() * (baseNumToRandomize * 3 - (-3 * baseNumToRandomize) + 1) + (-3 * baseNumToRandomize));
+    return createRingAndOffset(x, y, layer, layerSet);
 }
 
 function main() {   
@@ -83,19 +90,12 @@ function main() {
         app.activeDocument.selection.deselect();
 
         // create and semi randomize the rings
-        createRingAndOffset(BASE_RING_WIDTH, -1*BASE_RING_WIDTH, currLayer, newLayerSet);
-        createRingAndOffset(-1*BASE_RING_WIDTH, BASE_RING_WIDTH, currLayer, newLayerSet);
-        createRingAndOffset(BASE_RING_WIDTH, BASE_RING_WIDTH, currLayer, newLayerSet);
-        createRingAndOffset(-1*BASE_RING_WIDTH, -1*BASE_RING_WIDTH, currLayer, newLayerSet);
-
-        // createRingAndOffset(BASE_RING_WIDTH*3, -2*BASE_RING_WIDTH, currLayer, newLayerSet);
-        app.activeDocument.activeLayer.opacity = 70;
-        createRingAndOffset(-2*BASE_RING_WIDTH, BASE_RING_WIDTH*2, currLayer, newLayerSet);
-        app.activeDocument.activeLayer.opacity = 80;
-        createRingAndOffset(BASE_RING_WIDTH*2, BASE_RING_WIDTH*2, currLayer, newLayerSet);
-        app.activeDocument.activeLayer.opacity = 50;
-        createRingAndOffset(-3*BASE_RING_WIDTH, -2*BASE_RING_WIDTH, currLayer, newLayerSet);
-        app.activeDocument.activeLayer.opacity = 60;
+        for (var j = 0; j < 8; j++) {
+            var ring = createRing(BASE_RING_WIDTH, currLayer, newLayerSet, undefined, 20);
+            if (j > 4) {
+                ring.opacity = 50;
+            }
+        }
 
         createShadingAndHighlightLayers(newLayerSet);
 
