@@ -35,19 +35,23 @@ function createRingAroundSelection() {
 }
 
 function createRingAndOffset(x, y, layer, layerSet) {
-    var firstRingLayer = layer.duplicate(layerSet, ElementPlacement.PLACEATEND);
-    app.activeDocument.activeLayer = firstRingLayer;
+    var ringLayer = layer.duplicate(layerSet, ElementPlacement.PLACEATEND);
+    app.activeDocument.activeLayer = ringLayer;
     createRingAroundSelection();
     app.activeDocument.activeLayer.resize(PERCENT_TO_RESIZE_RING_WIDTH, PERCENT_TO_RESIZE_RING_WIDTH, 
         AnchorPosition.MIDDLECENTER);
     app.activeDocument.activeLayer.translate(new UnitValue( x, 'px' ),y);
-    return firstRingLayer;
+    return ringLayer;
 }
 
 function createRing(baseNumToRandomize, layer, layerSet, textureLayer, angleToRotate) {
     var x = Math.floor(Math.random() * (baseNumToRandomize * 3 - (-3 * baseNumToRandomize) + 1) + (-3 * baseNumToRandomize));
     var y = Math.floor(Math.random() * (baseNumToRandomize * 3 - (-3 * baseNumToRandomize) + 1) + (-3 * baseNumToRandomize));
     return createRingAndOffset(x, y, layer, layerSet);
+}
+
+function blurActiveLayer(amount) {
+    app.activeDocument.activeLayer.applyGaussianBlur(amount);
 }
 
 function main() {   
@@ -96,6 +100,11 @@ function main() {
                 ring.opacity = 50;
             }
         }
+
+        // blur the edges of the main shape
+        app.activeDocument.activeLayer = currLayer;
+        blurActiveLayer(15);
+
         // merge all the rings down
         for (var j = 0; j < 8; j++) {
             app.activeDocument.activeLayer = currLayer;
