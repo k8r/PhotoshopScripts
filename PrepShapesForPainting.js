@@ -1,10 +1,12 @@
 ﻿// @include "./utilities.jsx"
 
 var BASE_RING_WIDTH = 2.0;
-var NUM_RINGS = 12;
+var NUM_RINGS = 6;
 
+var TEXTURE_FOR_RINGS_LAYER_NAME = "textureForRings";
 var TEXTURE_FOR_MAIN_SHAPE_LAYER_NAME = "textureForMainShape";
 var RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_MAIN_SHAPE = "79.0";
+var RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_RINGS = "200.0";
 
 var HOW_MUCH_BLUR_FOR_EDGES = 2;
 
@@ -45,14 +47,20 @@ function createRing(baseNumToRandomize, layer, layerSet) {
 }
 
 // blurs the edges of the layer, adding in some texture too
-function blurAndTexturizeActiveLayer(amount, textureLayerName, textureRangeValue) {
+function blurAndTexturizeActiveLayer(blurAmount, textureFeatherAmount, textureLayerName, textureRangeValue, shouldKeepSolidLayer) {
     var layer = app.activeDocument.activeLayer;
     newLayer = layer.duplicate();
-    deleteGuidedByTexture(newLayer, textureLayerName, textureRangeValue, amount / 2.0);
-    newLayer.applyGaussianBlur(amount / 4.0);
-    contractActiveLayer(amount);
-    layer.applyGaussianBlur(amount);
-    newLayer.merge(); // assumes newLayer was put on top of layer when duplicated
+    deleteGuidedByTexture(newLayer, textureLayerName, textureRangeValue, textureFeatherAmount);
+    newLayer.applyGaussianBlur(blurAmount / 2.0);
+    contractActiveLayer(blurAmount * 2.0);
+    layer.applyGaussianBlur(blurAmount);
+    if (shouldKeepSolidLayer)
+        newLayer.merge(); // assumes newLayer was put on top of layer when duplicated
+    else {
+        layer.remove();
+        app.activeDocument.activeLayer = newLayer;
+    }
+    return app.activeDocument.activeLayer;
 }
 
 function deleteGuidedByTexture(layer, textureLayerName, rangeValue, featherAmount) {
@@ -64,11 +72,26 @@ function deleteGuidedByTexture(layer, textureLayerName, rangeValue, featherAmoun
     selectColorRange(RGBc(0.0, 0.0, 0.0), RGBc(rangeValue, rangeValue, rangeValue));
     app.activeDocument.selection.feather(featherAmount);
     app.activeDocument.activeLayer = layer;
+    copyOfTextureLayer.remove();
     app.activeDocument.selection.clear();
     app.activeDocument.selection.deselect();
-    copyOfTextureLayer.remove();
+    
 
     app.activeDocument.activeLayer = currActiveLayer;
+}
+
+function addTextureLayer(pathToFile, nameOfLayer) {
+    var fileRef = pathToFile;
+    app.open(new File( fileRef ));
+    var mainDoc = app.documents[0];
+    var textureDoc = app.documents[1];
+    activeDocument = textureDoc;
+    var textureLayer = textureDoc.activeLayer;
+
+    textureLayer.duplicate (mainDoc, ElementPlacement.PLACEATEND);
+    textureDoc.close();
+    activeDocument = mainDoc;
+    mainDoc.layers[mainDoc.layers.length - 1].name = nameOfLayer;
 }
 
 function main() {   
@@ -77,17 +100,9 @@ function main() {
         return 'cancel'; 
     }
 
-    // add texture layer to use later
-    var fileRef = "/Users/kate/src/PhotoshopScripts/Texture.jpg";
-    app.open(new File( fileRef ));
-    var mainDoc = app.documents[0];
-    var textureDoc = app.documents[1];
-    activeDocument = textureDoc;
-    var textureLayer = textureDoc.activeLayer;
-
-    textureLayer.duplicate (mainDoc, ElementPlacement.PLACEATEND);
-    activeDocument = mainDoc;
-    mainDoc.layers[mainDoc.layers.length - 1].name = TEXTURE_FOR_MAIN_SHAPE_LAYER_NAME;
+    // add texture layers to use later
+    addTextureLayer("/Users/kate/src/PhotoshopScripts/Texture.jpg", TEXTURE_FOR_MAIN_SHAPE_LAYER_NAME);
+    addTextureLayer("/Users/kate/src/PhotoshopScripts/RingTexture.jpg", TEXTURE_FOR_RINGS_LAYER_NAME);
     
 
     // create new shapes layer to copy existing shapes to and manipulate
@@ -102,17 +117,31 @@ function main() {
         // move current layer to a new group/layer set
         var newLayerSet = newShapesLayerSet.layerSets.add(ElementPlacement.INSIDE);
         newLayerSet.name = currLayer.name;
-        currLayer = currLayer.duplicate(newLayerSet, ElementPlacement.INSIDE);
+        var tempLayer = currLayer.duplicate(newLayerSet, ElementPlacement.INSIDE);
+        currLayer.visible = false;
+        currLayer = tempLayer;
 
         // contract the layer so adding the rings doesn't make it too big
         app.activeDocument.activeLayer = currLayer;
-        contractActiveLayer(BASE_RING_WIDTH * 2);
+        //contractActiveLayer(BASE_RING_WIDTH / 2.0);
 
         // create and semi randomize the rings
         for (var j = 0; j < NUM_RINGS; j++) {
-            var ring = createRing(BASE_RING_WIDTH, currLayer, newLayerSet);
-            blurAndTexturizeActiveLayer(HOW_MUCH_BLUR_FOR_EDGES / 2.0, TEXTURE_FOR_MAIN_SHAPE_LAYER_NAME, 
-                RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_MAIN_SHAPE);
+            var textureLayer = getFirstLayerWithName(TEXTURE_FOR_RINGS_LAYER_NAME);
+            var x = j * BASE_RING_WIDTH / 2.0 + BASE_RING_WIDTH / 2.0;
+            var y = j * BASE_RING_WIDTH / 2.0 + BASE_RING_WIDTH / 2.0;
+            if (j%2 == 0) {
+                textureLayer.resize(-100, undefined);
+                y = -1 * y;
+                x = -1 * x;
+            }
+
+            var ring = createRingAndOffset(x, y, currLayer, newLayerSet);
+            currLayer.visible = false; // so it doesn't get in the way of color selection
+
+            
+            ring = blurAndTexturizeActiveLayer(BASE_RING_WIDTH / 2.0, BASE_RING_WIDTH / 2.0, TEXTURE_FOR_RINGS_LAYER_NAME, 
+                RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_RINGS, false);
             if (j > NUM_RINGS / 4) {
                 ring.opacity = 60;
             }
@@ -120,16 +149,17 @@ function main() {
                 ring.opacity = 40;
             }
             else
-            ring.opacity = 10;
+                ring.opacity = 10;
+            currLayer.visible = true;
         }
 
         // blur and texturize the edges of the main shape
         app.activeDocument.activeLayer = currLayer;
-        blurAndTexturizeActiveLayer(HOW_MUCH_BLUR_FOR_EDGES, TEXTURE_FOR_MAIN_SHAPE_LAYER_NAME, 
-            RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_MAIN_SHAPE);
+        blurAndTexturizeActiveLayer(HOW_MUCH_BLUR_FOR_EDGES, HOW_MUCH_BLUR_FOR_EDGES, TEXTURE_FOR_MAIN_SHAPE_LAYER_NAME, 
+            RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_MAIN_SHAPE, true);
 
         // merge all the rings down
-        for (var j = 0; j < 8; j++) {
+        for (var j = 0; j < NUM_RINGS; j++) {
             app.activeDocument.activeLayer = currLayer;
             currLayer = app.activeDocument.activeLayer.merge();
         }
