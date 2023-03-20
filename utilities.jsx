@@ -136,6 +136,23 @@ function getFirstLayerWithName(name) {
     return undefined;
 }
 
+function selectPixelsOnActiveLayer() {
+    sTT = stringIDToTypeID;
+
+    (ref1 = new ActionReference()).putProperty(c = sTT('channel'), sTT('selection'));
+    (dsc = new ActionDescriptor()).putReference(sTT('null'), ref1);
+    (ref2 = new ActionReference()).putEnumerated(c, c, sTT('transparencyEnum'))
+    dsc.putReference(sTT('to'), ref2), executeAction(sTT('set'), dsc);
+}
+
+function contractActiveLayer(amount) {
+    selectPixelsOnActiveLayer();
+    app.activeDocument.selection.contract(amount);
+    app.activeDocument.selection.invert();
+    app.activeDocument.selection.clear();
+    app.activeDocument.selection.deselect();
+}
+
 // Returns an object that represents options set in the given descriptor;
 // for persitent options
 function getOptionsFromDescriptor(desc) {
@@ -179,4 +196,26 @@ function getDescriptorFromOptions(options) {
     }
     
     return desc;
+}
+
+
+
+// select color range functions
+function cTID(s) { return app.charIDToTypeID(s); }
+function sTID(s) { return app.stringIDToTypeID(s); }
+
+function RGBc(r, g, b) {
+    var color = new ActionDescriptor();
+        color.putDouble( cTID("Rd  "), r);
+        color.putDouble( cTID("Grn "), g);
+        color.putDouble( cTID("Bl  "), b);   
+    return color
+}
+
+function selectColorRange(color1, color2){
+    var desc = new ActionDescriptor(); 
+    desc.putInteger(cTID("Fzns"), 0 ); 
+    desc.putObject( cTID("Mnm "), cTID("RGBC"), color1 ); 
+    desc.putObject( cTID("Mxm "), cTID("RGBC"), color2 ); 
+    executeAction( cTID("ClrR"), desc, DialogModes.NO );
 }

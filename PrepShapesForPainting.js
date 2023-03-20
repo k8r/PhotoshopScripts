@@ -1,9 +1,12 @@
 ﻿// @include "./utilities.jsx"
 
-var BASE_RING_WIDTH = 3;
-var PERCENT_TO_RESIZE_RING_WIDTH = 101;
+var BASE_RING_WIDTH = 2.0;
+var NUM_RINGS = 12;
 
 var TEXTURE_FOR_MAIN_SHAPE_LAYER_NAME = "textureForMainShape";
+var RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_MAIN_SHAPE = "79.0";
+
+var HOW_MUCH_BLUR_FOR_EDGES = 2;
 
 function createShadingAndHighlightLayers(destinationSet) {
      // create two new layers to go into the new group/layer set
@@ -20,15 +23,6 @@ function createShadingAndHighlightLayers(destinationSet) {
      highlightsLayer.grouped = true;
 }
 
-function selectPixelsOnActiveLayer() {
-    sTT = stringIDToTypeID;
-
-    (ref1 = new ActionReference()).putProperty(c = sTT('channel'), sTT('selection'));
-    (dsc = new ActionDescriptor()).putReference(sTT('null'), ref1);
-    (ref2 = new ActionReference()).putEnumerated(c, c, sTT('transparencyEnum'))
-    dsc.putReference(sTT('to'), ref2), executeAction(sTT('set'), dsc);
-}
-
 function createRingAroundSelection() {
     selectPixelsOnActiveLayer();
     app.activeDocument.selection.contract(BASE_RING_WIDTH);
@@ -40,77 +34,41 @@ function createRingAndOffset(x, y, layer, layerSet) {
     var ringLayer = layer.duplicate(layerSet, ElementPlacement.PLACEATEND);
     app.activeDocument.activeLayer = ringLayer;
     createRingAroundSelection();
-    app.activeDocument.activeLayer.resize(PERCENT_TO_RESIZE_RING_WIDTH, PERCENT_TO_RESIZE_RING_WIDTH, 
-        AnchorPosition.MIDDLECENTER);
     app.activeDocument.activeLayer.translate(new UnitValue( x, 'px' ),y);
     return ringLayer;
 }
 
-function createRing(baseNumToRandomize, layer, layerSet, textureLayer, angleToRotate) {
+function createRing(baseNumToRandomize, layer, layerSet) {
     var x = Math.floor(Math.random() * (baseNumToRandomize * 3 - (-3 * baseNumToRandomize) + 1) + (-3 * baseNumToRandomize));
     var y = Math.floor(Math.random() * (baseNumToRandomize * 3 - (-3 * baseNumToRandomize) + 1) + (-3 * baseNumToRandomize));
     return createRingAndOffset(x, y, layer, layerSet);
 }
 
-function blurAndTexturizeActiveLayer(amount, textureLayerName) {
+// blurs the edges of the layer, adding in some texture too
+function blurAndTexturizeActiveLayer(amount, textureLayerName, textureRangeValue) {
     var layer = app.activeDocument.activeLayer;
     newLayer = layer.duplicate();
-    multiplyTextureOnto(layer, textureLayerName);
+    deleteGuidedByTexture(newLayer, textureLayerName, textureRangeValue, amount / 2.0);
+    newLayer.applyGaussianBlur(amount / 4.0);
+    contractActiveLayer(amount);
     layer.applyGaussianBlur(amount);
+    newLayer.merge(); // assumes newLayer was put on top of layer when duplicated
+}
+
+function deleteGuidedByTexture(layer, textureLayerName, rangeValue, featherAmount) {
+    var currActiveLayer = app.activeDocument.activeLayer;
     
-}
-
-// FUNCTION MAKE MASK
-function makeMask()
-{
-    // =======================================================
-var idhistoryStateChanged = stringIDToTypeID( "historyStateChanged" );
-var desc2273 = new ActionDescriptor();
-var iddocumentID = stringIDToTypeID( "documentID" );
-desc2273.putInteger( iddocumentID, 1461 );
-var idID = stringIDToTypeID( "ID" );
-desc2273.putInteger( idID, 1576 );
-var idname = stringIDToTypeID( "name" );
-desc2273.putString( idname, "\"Add Layer Mask\"" );
-var idhasEnglish = stringIDToTypeID( "hasEnglish" );
-desc2273.putBoolean( idhasEnglish, true );
-var iditemIndex = stringIDToTypeID( "itemIndex" );
-desc2273.putInteger( iditemIndex, 50 );
-var idcommandID = stringIDToTypeID( "commandID" );
-desc2273.putInteger( idcommandID, 5058 );
-executeAction( idhistoryStateChanged, desc2273, DialogModes.NO );
-
-// =======================================================
-var idmake = stringIDToTypeID( "make" );
-var desc2274 = new ActionDescriptor();
-var idnew = stringIDToTypeID( "new" );
-var idchannel = stringIDToTypeID( "channel" );
-desc2274.putClass( idnew, idchannel );
-var idat = stringIDToTypeID( "at" );
-    var ref59 = new ActionReference();
-    var idchannel = stringIDToTypeID( "channel" );
-    var idchannel = stringIDToTypeID( "channel" );
-    var idmask = stringIDToTypeID( "mask" );
-    ref59.putEnumerated( idchannel, idchannel, idmask );
-desc2274.putReference( idat, ref59 );
-var idusing = stringIDToTypeID( "using" );
-var iduserMaskEnabled = stringIDToTypeID( "userMaskEnabled" );
-var idrevealAll = stringIDToTypeID( "revealAll" );
-desc2274.putEnumerated( idusing, iduserMaskEnabled, idrevealAll );
-executeAction( idmake, desc2274, DialogModes.NO );
-}
-
-function multiplyTextureOnto(layer, textureLayerName) {
     var textureLayer = getFirstLayerWithName(textureLayerName);
-    
     var copyOfTextureLayer = textureLayer.duplicate(layer, ElementPlacement.PLACEBEFORE);
+    app.activeDocument.activeLayer = copyOfTextureLayer;
+    selectColorRange(RGBc(0.0, 0.0, 0.0), RGBc(rangeValue, rangeValue, rangeValue));
+    app.activeDocument.selection.feather(featherAmount);
     app.activeDocument.activeLayer = layer;
-    makeMask();
+    app.activeDocument.selection.clear();
+    app.activeDocument.selection.deselect();
+    copyOfTextureLayer.remove();
 
-    // copyOfTextureLayer.blendMode = BlendMode.MULTIPLY;
-    // copyOfTextureLayer.grouped = true;
-    // copyOfTextureLayer.merge();
-
+    app.activeDocument.activeLayer = currActiveLayer;
 }
 
 function main() {   
@@ -148,23 +106,27 @@ function main() {
 
         // contract the layer so adding the rings doesn't make it too big
         app.activeDocument.activeLayer = currLayer;
-        selectPixelsOnActiveLayer();
-        app.activeDocument.selection.contract(BASE_RING_WIDTH*2);
-        app.activeDocument.selection.invert();
-        app.activeDocument.selection.clear();
-        app.activeDocument.selection.deselect();
+        contractActiveLayer(BASE_RING_WIDTH * 2);
 
         // create and semi randomize the rings
-        for (var j = 0; j < 8; j++) {
-            var ring = createRing(BASE_RING_WIDTH, currLayer, newLayerSet, undefined, 20);
-            if (j > 4) {
-                ring.opacity = 50;
+        for (var j = 0; j < NUM_RINGS; j++) {
+            var ring = createRing(BASE_RING_WIDTH, currLayer, newLayerSet);
+            blurAndTexturizeActiveLayer(HOW_MUCH_BLUR_FOR_EDGES / 2.0, TEXTURE_FOR_MAIN_SHAPE_LAYER_NAME, 
+                RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_MAIN_SHAPE);
+            if (j > NUM_RINGS / 4) {
+                ring.opacity = 60;
             }
+            if (j > NUM_RINGS / 2) {
+                ring.opacity = 40;
+            }
+            else
+            ring.opacity = 10;
         }
 
         // blur and texturize the edges of the main shape
         app.activeDocument.activeLayer = currLayer;
-        blurAndTexturizeActiveLayer(15, TEXTURE_FOR_MAIN_SHAPE_LAYER_NAME);
+        blurAndTexturizeActiveLayer(HOW_MUCH_BLUR_FOR_EDGES, TEXTURE_FOR_MAIN_SHAPE_LAYER_NAME, 
+            RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_MAIN_SHAPE);
 
         // merge all the rings down
         for (var j = 0; j < 8; j++) {
@@ -178,6 +140,8 @@ function main() {
         var idcollapseAllGroupsEvent = stringIDToTypeID("collapseAllGroupsEvent");
         var desc = new ActionDescriptor();
         executeAction(idcollapseAllGroupsEvent, desc, DialogModes.NO);
+
+        shapesLayerSet.visible = false;
 
     }
 

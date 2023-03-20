@@ -1,0 +1,30 @@
+function selectBlack() {
+    var idcolorRange = stringIDToTypeID( "colorRange" );
+    var desc2710 = new ActionDescriptor();
+    var idfuzziness = stringIDToTypeID( "fuzziness" );
+    desc2710.putInteger( idfuzziness, 44 );
+    var idminimum = stringIDToTypeID( "minimum" );
+        var desc2711 = new ActionDescriptor();
+        var idluminance = stringIDToTypeID( "luminance" );
+        desc2711.putDouble( idluminance, 3.320000 );
+        var ida = stringIDToTypeID( "a" );
+        desc2711.putDouble( ida, 0.000000 );
+        var idb = stringIDToTypeID( "b" );
+        desc2711.putDouble( idb, 0.000000 );
+    var idlabColor = stringIDToTypeID( "labColor" );
+    desc2710.putObject( idminimum, idlabColor, desc2711 );
+    var idmaximum = stringIDToTypeID( "maximum" );
+        var desc2712 = new ActionDescriptor();
+        var idluminance = stringIDToTypeID( "luminance" );
+        desc2712.putDouble( idluminance, 3.320000 );
+        var ida = stringIDToTypeID( "a" );
+        desc2712.putDouble( ida, 0.000000 );
+        var idb = stringIDToTypeID( "b" );
+        desc2712.putDouble( idb, 0.000000 );
+    var idlabColor = stringIDToTypeID( "labColor" );
+    desc2710.putObject( idmaximum, idlabColor, desc2712 );
+    var idcolorModel = stringIDToTypeID( "colorModel" );
+    desc2710.putInteger( idcolorModel, 0 );
+executeAction( idcolorRange, desc2710, DialogModes.NO );
+}
+selectBlack();
