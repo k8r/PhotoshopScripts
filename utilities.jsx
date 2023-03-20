@@ -126,6 +126,16 @@ function getLayerSetNamed(name) {
     return undefined;
 }
 
+function getFirstLayerWithName(name) {
+    var layers = app.activeDocument.artLayers
+    for (var i = 0; i < layers.length; i++) {
+        if (layers[i].name == name) {
+            return layers[i];
+        } 
+    }
+    return undefined;
+}
+
 // Returns an object that represents options set in the given descriptor;
 // for persitent options
 function getOptionsFromDescriptor(desc) {

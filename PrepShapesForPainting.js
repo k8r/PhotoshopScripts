@@ -3,6 +3,8 @@
 var BASE_RING_WIDTH = 3;
 var PERCENT_TO_RESIZE_RING_WIDTH = 101;
 
+var TEXTURE_FOR_MAIN_SHAPE_LAYER_NAME = "textureForMainShape";
+
 function createShadingAndHighlightLayers(destinationSet) {
      // create two new layers to go into the new group/layer set
      var shadingLayer = app.activeDocument.artLayers.add();
@@ -50,8 +52,65 @@ function createRing(baseNumToRandomize, layer, layerSet, textureLayer, angleToRo
     return createRingAndOffset(x, y, layer, layerSet);
 }
 
-function blurActiveLayer(amount) {
-    app.activeDocument.activeLayer.applyGaussianBlur(amount);
+function blurAndTexturizeActiveLayer(amount, textureLayerName) {
+    var layer = app.activeDocument.activeLayer;
+    newLayer = layer.duplicate();
+    multiplyTextureOnto(layer, textureLayerName);
+    layer.applyGaussianBlur(amount);
+    
+}
+
+// FUNCTION MAKE MASK
+function makeMask()
+{
+    // =======================================================
+var idhistoryStateChanged = stringIDToTypeID( "historyStateChanged" );
+var desc2273 = new ActionDescriptor();
+var iddocumentID = stringIDToTypeID( "documentID" );
+desc2273.putInteger( iddocumentID, 1461 );
+var idID = stringIDToTypeID( "ID" );
+desc2273.putInteger( idID, 1576 );
+var idname = stringIDToTypeID( "name" );
+desc2273.putString( idname, "\"Add Layer Mask\"" );
+var idhasEnglish = stringIDToTypeID( "hasEnglish" );
+desc2273.putBoolean( idhasEnglish, true );
+var iditemIndex = stringIDToTypeID( "itemIndex" );
+desc2273.putInteger( iditemIndex, 50 );
+var idcommandID = stringIDToTypeID( "commandID" );
+desc2273.putInteger( idcommandID, 5058 );
+executeAction( idhistoryStateChanged, desc2273, DialogModes.NO );
+
+// =======================================================
+var idmake = stringIDToTypeID( "make" );
+var desc2274 = new ActionDescriptor();
+var idnew = stringIDToTypeID( "new" );
+var idchannel = stringIDToTypeID( "channel" );
+desc2274.putClass( idnew, idchannel );
+var idat = stringIDToTypeID( "at" );
+    var ref59 = new ActionReference();
+    var idchannel = stringIDToTypeID( "channel" );
+    var idchannel = stringIDToTypeID( "channel" );
+    var idmask = stringIDToTypeID( "mask" );
+    ref59.putEnumerated( idchannel, idchannel, idmask );
+desc2274.putReference( idat, ref59 );
+var idusing = stringIDToTypeID( "using" );
+var iduserMaskEnabled = stringIDToTypeID( "userMaskEnabled" );
+var idrevealAll = stringIDToTypeID( "revealAll" );
+desc2274.putEnumerated( idusing, iduserMaskEnabled, idrevealAll );
+executeAction( idmake, desc2274, DialogModes.NO );
+}
+
+function multiplyTextureOnto(layer, textureLayerName) {
+    var textureLayer = getFirstLayerWithName(textureLayerName);
+    
+    var copyOfTextureLayer = textureLayer.duplicate(layer, ElementPlacement.PLACEBEFORE);
+    app.activeDocument.activeLayer = layer;
+    makeMask();
+
+    // copyOfTextureLayer.blendMode = BlendMode.MULTIPLY;
+    // copyOfTextureLayer.grouped = true;
+    // copyOfTextureLayer.merge();
+
 }
 
 function main() {   
@@ -66,10 +125,12 @@ function main() {
     var mainDoc = app.documents[0];
     var textureDoc = app.documents[1];
     activeDocument = textureDoc;
-    var curLayer = textureDoc.activeLayer;
+    var textureLayer = textureDoc.activeLayer;
 
-    curLayer.duplicate (mainDoc, ElementPlacement.PLACEATEND);
+    textureLayer.duplicate (mainDoc, ElementPlacement.PLACEATEND);
     activeDocument = mainDoc;
+    mainDoc.layers[mainDoc.layers.length - 1].name = TEXTURE_FOR_MAIN_SHAPE_LAYER_NAME;
+    
 
     // create new shapes layer to copy existing shapes to and manipulate
     var newShapesLayerSet = app.activeDocument.layerSets.add();
@@ -101,9 +162,9 @@ function main() {
             }
         }
 
-        // blur the edges of the main shape
+        // blur and texturize the edges of the main shape
         app.activeDocument.activeLayer = currLayer;
-        blurActiveLayer(15);
+        blurAndTexturizeActiveLayer(15, TEXTURE_FOR_MAIN_SHAPE_LAYER_NAME);
 
         // merge all the rings down
         for (var j = 0; j < 8; j++) {
