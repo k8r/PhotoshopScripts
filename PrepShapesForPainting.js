@@ -3,6 +3,7 @@
 var BASE_RING_WIDTH = 2.0;
 var NUM_RINGS = 6;
 
+var SUBTLE_TEXTURE_LAYER_NAME = "subtleTexture";
 var TEXTURE_FOR_RINGS_LAYER_NAME = "textureForRings";
 var TEXTURE_FOR_MAIN_SHAPE_LAYER_NAME = "textureForMainShape";
 var RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_MAIN_SHAPE = "50.0";
@@ -118,6 +119,7 @@ function main() {
     // add texture layers to use later
     addTextureLayer("/Users/kate/src/PhotoshopScripts/Texture.jpg", TEXTURE_FOR_MAIN_SHAPE_LAYER_NAME);
     addTextureLayer("/Users/kate/src/PhotoshopScripts/RingTexture.jpg", TEXTURE_FOR_RINGS_LAYER_NAME);
+    addTextureLayer("/Users/kate/src/PhotoshopScripts/SubtleTexture.jpg", SUBTLE_TEXTURE_LAYER_NAME);
     
 
     // create new shapes layer to copy existing shapes to and manipulate
@@ -198,6 +200,10 @@ function main() {
             app.activeDocument.activeLayer = currLayer;
             currLayer = app.activeDocument.activeLayer.merge();
         }
+
+        // add subtle texture layer
+        var textureLayer = getFirstLayerWithName(SUBTLE_TEXTURE_LAYER_NAME);
+        var copyOfTextureLayer = textureLayer.duplicate(currLayer, ElementPlacement.PLACEBEFORE);
 
         createShadingAndHighlightLayers(newLayerSet);
 
