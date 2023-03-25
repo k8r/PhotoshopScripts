@@ -5,8 +5,8 @@ var NUM_RINGS = 6;
 
 var TEXTURE_FOR_RINGS_LAYER_NAME = "textureForRings";
 var TEXTURE_FOR_MAIN_SHAPE_LAYER_NAME = "textureForMainShape";
-var RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_MAIN_SHAPE = "79.0";
-var RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_RINGS = "200.0";
+var RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_MAIN_SHAPE = "50.0";
+var RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_RINGS = "250.0";
 
 var HOW_MUCH_BLUR_FOR_EDGES = 2;
 
@@ -32,18 +32,31 @@ function createRingAroundSelection() {
     app.activeDocument.selection.deselect();
 }
 
-function createRingAndOffset(x, y, layer, layerSet) {
+function createExpandedRing(expandAmount, layer, layerSet) {
     var ringLayer = layer.duplicate(layerSet, ElementPlacement.PLACEATEND);
     app.activeDocument.activeLayer = ringLayer;
     createRingAroundSelection();
-    app.activeDocument.activeLayer.translate(new UnitValue( x, 'px' ),y);
+
+    var activeLayer = app.activeDocument.activeLayer;
+    var resizePercentAmount = 100.0 + (expandAmount / (activeLayer.bounds[2] - activeLayer.bounds[0]) * 100.0);
+    activeLayer.resize(resizePercentAmount, resizePercentAmount, AnchorPosition.MIDDLECENTER);
+
+    return ringLayer;
+}
+
+function createOffsetRing(horizontalOffset, verticalOffset, layer, layerSet) {
+    var ringLayer = layer.duplicate(layerSet, ElementPlacement.PLACEATEND);
+    app.activeDocument.activeLayer = ringLayer;
+    createRingAroundSelection();
+
+    app.activeDocument.activeLayer.translate(new UnitValue( horizontalOffset, 'px' ), new UnitValue(verticalOffset, 'px'));
     return ringLayer;
 }
 
 function createRing(baseNumToRandomize, layer, layerSet) {
     var x = Math.floor(Math.random() * (baseNumToRandomize * 3 - (-3 * baseNumToRandomize) + 1) + (-3 * baseNumToRandomize));
     var y = Math.floor(Math.random() * (baseNumToRandomize * 3 - (-3 * baseNumToRandomize) + 1) + (-3 * baseNumToRandomize));
-    return createRingAndOffset(x, y, layer, layerSet);
+    return createExpandedRing(x, y, layer, layerSet);
 }
 
 // blurs the edges of the layer, adding in some texture too
@@ -51,15 +64,17 @@ function blurAndTexturizeActiveLayer(blurAmount, textureFeatherAmount, textureLa
     var layer = app.activeDocument.activeLayer;
     newLayer = layer.duplicate();
     deleteGuidedByTexture(newLayer, textureLayerName, textureRangeValue, textureFeatherAmount);
-    newLayer.applyGaussianBlur(blurAmount / 2.0);
-    contractActiveLayer(blurAmount * 2.0);
-    layer.applyGaussianBlur(blurAmount);
-    if (shouldKeepSolidLayer)
-        newLayer.merge(); // assumes newLayer was put on top of layer when duplicated
-    else {
+    newLayer.applyGaussianBlur(blurAmount / 4.0);
+    if (!shouldKeepSolidLayer) {
         layer.remove();
         app.activeDocument.activeLayer = newLayer;
+        return newLayer;
     }
+
+    contractActiveLayer(blurAmount * 3.0);
+    layer.applyGaussianBlur(blurAmount);
+    newLayer.merge(); // assumes newLayer was put on top of layer when duplicated
+
     return app.activeDocument.activeLayer;
 }
 
@@ -123,34 +138,54 @@ function main() {
 
         // contract the layer so adding the rings doesn't make it too big
         app.activeDocument.activeLayer = currLayer;
-        //contractActiveLayer(BASE_RING_WIDTH / 2.0);
+        contractActiveLayer(BASE_RING_WIDTH / 4.0);
 
         // create and semi randomize the rings
         for (var j = 0; j < NUM_RINGS; j++) {
-            var textureLayer = getFirstLayerWithName(TEXTURE_FOR_RINGS_LAYER_NAME);
-            var x = j * BASE_RING_WIDTH / 2.0 + BASE_RING_WIDTH / 2.0;
-            var y = j * BASE_RING_WIDTH / 2.0 + BASE_RING_WIDTH / 2.0;
-            if (j%2 == 0) {
-                textureLayer.resize(-100, undefined);
-                y = -1 * y;
-                x = -1 * x;
-            }
-
-            var ring = createRingAndOffset(x, y, currLayer, newLayerSet);
-            currLayer.visible = false; // so it doesn't get in the way of color selection
-
             
-            ring = blurAndTexturizeActiveLayer(BASE_RING_WIDTH / 2.0, BASE_RING_WIDTH / 2.0, TEXTURE_FOR_RINGS_LAYER_NAME, 
-                RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_RINGS, false);
-            if (j > NUM_RINGS / 4) {
-                ring.opacity = 60;
+            var expandAmount = (j * BASE_RING_WIDTH * 3.0);
+            var offsetAmount = expandAmount / 2.0;
+            
+            textureLayer = getFirstLayerWithName(TEXTURE_FOR_RINGS_LAYER_NAME);
+            textureLayer.resize(-100, undefined);
+            if (j%2== 0)
+                textureLayer.resize(100, -100, undefined);
+
+            var ring = createExpandedRing(expandAmount, currLayer, newLayerSet);
+            ring = blurAndTexturizeActiveLayer(0, BASE_RING_WIDTH / 2.0, TEXTURE_FOR_RINGS_LAYER_NAME, 
+                        RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_RINGS, false);
+
+            var offsetRing = undefined;            
+            switch (j) {
+                case 0:
+                    offsetRing = createOffsetRing(BASE_RING_WIDTH * 2.0, BASE_RING_WIDTH * 2.0, currLayer, newLayerSet);
+                    ring.opacity = 90;
+                    offsetRing.opacity = 50;
+                    break;
+                case 1:
+                    offsetRing = createOffsetRing(-1 * BASE_RING_WIDTH * 2.0, BASE_RING_WIDTH * 2.0, currLayer, newLayerSet);
+                    ring.opacity = 80;
+                    offsetRing.opacity = 50;
+                    break;
+                case 2:
+                    offsetRing = createOffsetRing(BASE_RING_WIDTH * 2.0, -1 * BASE_RING_WIDTH * 2.0, currLayer, newLayerSet);
+                    ring.opacity = 70;
+                    offsetRing.opacity = 50;
+                    break;
+                case 3:
+                    offsetRing = createOffsetRing(-1 * BASE_RING_WIDTH * 2.0, -1 * BASE_RING_WIDTH * 2.0, currLayer, newLayerSet);
+                    ring.opacity = 60;
+                    offsetRing.opacity = 50;
+                    break;
+                default:
+                    ring.opacity = 50;
             }
-            if (j > NUM_RINGS / 2) {
-                ring.opacity = 40;
+            if (offsetRing != undefined) {
+                app.activeDocument.activeLayer = offsetRing;
+                blurAndTexturizeActiveLayer(0, BASE_RING_WIDTH / 2.0, TEXTURE_FOR_RINGS_LAYER_NAME, 
+                        RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_RINGS, false);
             }
-            else
-                ring.opacity = 10;
-            currLayer.visible = true;
+            
         }
 
         // blur and texturize the edges of the main shape
@@ -159,7 +194,7 @@ function main() {
             RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_MAIN_SHAPE, true);
 
         // merge all the rings down
-        for (var j = 0; j < NUM_RINGS; j++) {
+        for (var j = 0; j < NUM_RINGS + 4; j++) { // the four is the number of offset ring layers made above
             app.activeDocument.activeLayer = currLayer;
             currLayer = app.activeDocument.activeLayer.merge();
         }

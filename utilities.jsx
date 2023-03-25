@@ -145,6 +145,14 @@ function selectPixelsOnActiveLayer() {
     dsc.putReference(sTT('to'), ref2), executeAction(sTT('set'), dsc);
 }
 
+function getWidthOfLayer(layer) {
+    return layer.bounds[2] - layer.bounds[0];
+}
+
+function getHeightOfLayer(layer) {
+    return layer.bounds[3] - layer.bounds[1];
+}
+
 function contractActiveLayer(amount) {
     selectPixelsOnActiveLayer();
     app.activeDocument.selection.contract(amount);
