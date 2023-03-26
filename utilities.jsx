@@ -154,11 +154,15 @@ function getHeightOfLayer(layer) {
 }
 
 function contractActiveLayer(amount) {
-    selectPixelsOnActiveLayer();
-    app.activeDocument.selection.contract(amount);
-    app.activeDocument.selection.invert();
-    app.activeDocument.selection.clear();
-    app.activeDocument.selection.deselect();
+    try {
+        selectPixelsOnActiveLayer();
+        app.activeDocument.selection.contract(amount);
+        app.activeDocument.selection.invert();
+        app.activeDocument.selection.clear();
+        app.activeDocument.selection.deselect();
+    }
+    catch (err) {}
+    
 }
 
 // Returns an object that represents options set in the given descriptor;
