@@ -11,7 +11,7 @@ var RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_RINGS = "200.0";
 
 var HOW_MUCH_BLUR_FOR_EDGES = 3;
 
-function createShadingAndHighlightLayers(destinationSet) {
+function createShadingHighlightTexture(destinationSet) {
      // create two new layers to go into the new group/layer set
      var shadingLayer = app.activeDocument.artLayers.add();
      shadingLayer.move(destinationSet, ElementPlacement.INSIDE);
@@ -26,6 +26,9 @@ function createShadingAndHighlightLayers(destinationSet) {
      var textureLayer = getFirstLayerWithName(SUBTLE_TEXTURE_LAYER_NAME);
      var copyOfTextureLayer = textureLayer.duplicate(destinationSet, ElementPlacement.INSIDE);
      copyOfTextureLayer.blendMode = BlendMode.MULTIPLY;
+     var flipValueX = Math.random() > .5 ? 100 : -100;
+     var flipValueY = Math.random() > .5 ? 100 : -100;
+     copyOfTextureLayer.resize(flipValueX, flipValueY, undefined);
 
      shadingLayer.grouped = true;
      highlightsLayer.grouped = true;
@@ -209,7 +212,7 @@ function main() {
 
         
 
-        createShadingAndHighlightLayers(newLayerSet);
+        createShadingHighlightTexture(newLayerSet);
 
         // collapse all layer sets / groups
         var idcollapseAllGroupsEvent = stringIDToTypeID("collapseAllGroupsEvent");
