@@ -11,16 +11,32 @@ var RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_RINGS = "200.0";
 
 var HOW_MUCH_BLUR_FOR_EDGES = 3;
 
+function putColorInTopCorner() {
+    app.activeDocument.selection.select([[0, 0], [0, 15], [15, 15], [15, 0]], SelectionType.REPLACE);
+
+    const red = new SolidColor();
+    red.rgb.red = 255;
+    red.rgb.green = 0;
+    red.rgb.blue = 0;
+
+    app.foregroundColor = red;
+    app.activeDocument.selection.fill(red);
+    app.activeDocument.selection.deselect();
+}
+
 function createShadingHighlightTexture(destinationSet) {
+    
      // create two new layers to go into the new group/layer set
      var shadingLayer = app.activeDocument.artLayers.add();
      shadingLayer.move(destinationSet, ElementPlacement.INSIDE);
      shadingLayer.name = "shading";
-     shadingLayer.blendMode = BlendMode.MULTIPLY;
+     //shadingLayer.blendMode = BlendMode.MULTIPLY;
+     putColorInTopCorner();
 
      var highlightsLayer = app.activeDocument.artLayers.add();
      highlightsLayer.name = "highlights";
      highlightsLayer.move(destinationSet, ElementPlacement.INSIDE);
+     putColorInTopCorner();
 
      // add subtle texture layer
      var textureLayer = getFirstLayerWithName(SUBTLE_TEXTURE_LAYER_NAME);
@@ -209,9 +225,7 @@ function main() {
             RANGE_FOR_DELETION_GUIDED_BY_TEXTURE_FOR_RINGS, true, 60);
         currLayer.opacity = 60;
         currLayer.merge();
-
         
-
         createShadingHighlightTexture(newLayerSet);
 
         // collapse all layer sets / groups
