@@ -30,7 +30,7 @@ function createShadingHighlightTexture(destinationSet) {
      var shadingLayer = app.activeDocument.artLayers.add();
      shadingLayer.move(destinationSet, ElementPlacement.INSIDE);
      shadingLayer.name = "shading";
-     //shadingLayer.blendMode = BlendMode.MULTIPLY;
+     shadingLayer.blendMode = BlendMode.MULTIPLY;
      putColorInTopCorner();
 
      var highlightsLayer = app.activeDocument.artLayers.add();
